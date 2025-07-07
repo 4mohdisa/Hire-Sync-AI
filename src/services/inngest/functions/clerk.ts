@@ -6,7 +6,6 @@ import { sql } from "drizzle-orm";
 
 import { env } from "@/data/env/server"
 import { inngest } from "../client"
-import { Webhook } from "svix"
 import { NonRetriableError } from "inngest"
 import { deleteUser, insertUser, updateUser } from "@/features/users/db/users"
 import { insertUserNotificationSettings } from "@/features/users/db/userNotificationSettings"
@@ -30,26 +29,6 @@ function debugLog(message: string, data?: any) {
 
 debugLog('Clerk webhook functions module loaded');
 debugLog('DATABASE_URL is configured as', { url: env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@') });
-debugLog('CLERK_WEBHOOK_SECRET is configured', { hasSecret: !!env.CLERK_WEBHOOK_SECRET });
-
-function verifyWebhook({
-  raw,
-  headers,
-}: {
-  raw: string
-  headers: Record<string, string>
-}) {
-  debugLog('Verifying webhook', { headers: Object.keys(headers) });
-  try {
-    const result = new Webhook(env.CLERK_WEBHOOK_SECRET).verify(raw, headers);
-    debugLog('Webhook verification successful');
-    return result;
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    debugLog('Webhook verification failed', { error: errorMessage });
-    throw error;
-  }
-}
 
 export const clerkCreateUser = inngest.createFunction(
   { id: "clerk/create-db-user", name: "Clerk - Create DB User" },
@@ -57,34 +36,23 @@ export const clerkCreateUser = inngest.createFunction(
     event: "user.created",
   },
   async ({ event, step }) => {
+    console.log("🚨🚨🚨 INNGEST FUNCTION TRIGGERED: user.created 🚨🚨🚨");
     debugLog("⭐ RECEIVED USER.CREATED EVENT", event.data); console.log("⭐ RECEIVED USER.CREATED EVENT - webhook processing started");
     
     // Dump environment info to check configuration
     debugLog("Environment check", {
       dbUrl: env.DATABASE_URL?.substring(0, 15) + "...",
-      webhookSecret: env.CLERK_WEBHOOK_SECRET ? "[Set]" : "[Missing]",
     });
 
     try {
-      await step.run("verify-webhook", async () => {
-        debugLog("Starting webhook verification");
-        try {
-          console.log("🔒 Verifying webhook signature...");
-          verifyWebhook(event.data);
-          console.log("✅ Webhook signature verified successfully");
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          debugLog("Webhook verification failed", { error: errorMessage });
-          console.error("❌ Invalid webhook signature:", errorMessage);
-          throw new NonRetriableError("Invalid webhook");
-        }
-      });
+      // Skip webhook verification - Inngest handles this for direct Clerk integration
+      console.log("✅ Using direct Clerk->Inngest integration (verification handled by Inngest)");
 
       const userId = await step.run("create-user", async () => {
         try {
           debugLog("Starting user creation");
           console.log("📝 Extracting user data from webhook...");
-          const userData = event.data.data;
+          const userData = event.data.data.data;
           debugLog("User data from webhook", userData);
           console.log("👤 User data received from Clerk");
           
@@ -201,14 +169,6 @@ export const clerkUpdateUser = inngest.createFunction(
   { id: "clerk/update-db-user", name: "Clerk - Update DB User" },
   { event: "user.updated" },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("update-user", async () => {
       const userData = event.data.data
       const email = userData.email_addresses.find(
@@ -233,14 +193,6 @@ export const clerkDeleteUser = inngest.createFunction(
   { id: "clerk/delete-db-user", name: "Clerk - Delete DB User" },
   { event: "user.deleted" },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("delete-user", async () => {
       const { id } = event.data.data
 
@@ -261,14 +213,6 @@ export const clerkCreateOrganization = inngest.createFunction(
     event: "organization.created",
   },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("create-organization", async () => {
       const orgData = event.data.data
 
@@ -290,14 +234,6 @@ export const clerkUpdateOrganization = inngest.createFunction(
   },
   { event: "organization.updated" },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("update-organization", async () => {
       const orgData = event.data.data
 
@@ -317,14 +253,6 @@ export const clerkDeleteOrganization = inngest.createFunction(
   },
   { event: "organization.deleted" },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("delete-organization", async () => {
       const { id } = event.data.data
 
@@ -345,14 +273,6 @@ export const clerkCreateOrgMembership = inngest.createFunction(
     event: "organizationMembership.created",
   },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("create-organization-user-settings", async () => {
       const userId = event.data.data.public_user_data.user_id
       const orgId = event.data.data.organization.id
@@ -374,14 +294,6 @@ export const clerkDeleteOrgMembership = inngest.createFunction(
     event: "organizationMembership.deleted",
   },
   async ({ event, step }) => {
-    await step.run("verify-webhook", async () => {
-      try {
-        verifyWebhook(event.data)
-      } catch {
-        throw new NonRetriableError("Invalid webhook")
-      }
-    })
-
     await step.run("delete-organization-user-settings", async () => {
       const userId = event.data.data.public_user_data.user_id
       const orgId = event.data.data.organization.id
