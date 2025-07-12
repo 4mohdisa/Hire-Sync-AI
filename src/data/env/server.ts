@@ -15,6 +15,9 @@ export const env = createEnv({
     GEMINI_API_KEY: z.string().min(1),
     RESEND_API_KEY: z.string().min(1),
     SERVER_URL: z.string().min(1),
+    INNGEST_CLIENT_ID: z.string().min(1),
+    INNGEST_SIGNING_KEY: z.string().optional(),
+    INNGEST_EVENT_KEY: z.string().optional(),
   },
   createFinalSchema: env => {
     return z.object(env).transform(val => {

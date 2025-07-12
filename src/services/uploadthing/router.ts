@@ -5,7 +5,6 @@ import { inngest } from "../inngest/client"
 import { upsertUserResume } from "@/features/users/db/userResumes"
 import { db } from "@/drizzle/db"
 import { eq } from "drizzle-orm"
-import UserResumePage from "@/app/(job-seeker)/user-settings/resume/page"
 import { UserResumeTable } from "@/drizzle/schema"
 import { uploadthing } from "./client"
 

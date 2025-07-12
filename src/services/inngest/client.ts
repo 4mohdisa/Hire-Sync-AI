@@ -88,4 +88,6 @@ export const inngest = new Inngest({
     warn: console.warn,
     error: console.error,
   },
+  // Enable automatic event processing in development
+  isDev: process.env.NODE_ENV !== "production",
 })

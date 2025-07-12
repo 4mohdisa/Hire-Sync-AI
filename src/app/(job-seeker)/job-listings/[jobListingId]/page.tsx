@@ -56,7 +56,7 @@ export default function JobListingPage({
 }) {
   return (
     <>
-      <ResizablePanelGroup autoSaveId="job-board-panel" direction="horizontal">
+      <ResizablePanelGroup autoSaveId="hire-sync-ai-panel" direction="horizontal">
         <ResizablePanel id="left" order={1} defaultSize={60} minSize={30}>
           <div className="p-4 h-screen overflow-y-auto">
             <JobListingItems searchParams={searchParams} params={params} />

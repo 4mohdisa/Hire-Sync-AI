@@ -20,7 +20,7 @@ import {
 } from "@/features/organizations/db/organizationUserSettings"
 
 // Debug logger that only logs when DEBUG is true
-function debugLog(message: string, data?: any) {
+function debugLog(message: string, data?: unknown) {
   if (DEBUG) {
     const timestamp = new Date().toISOString();
     console.log(`[DEBUG ${timestamp}] ${message}`, data ? JSON.stringify(data) : '');
@@ -33,7 +33,7 @@ debugLog('DATABASE_URL is configured as', { url: env.DATABASE_URL?.replace(/:[^:
 export const clerkCreateUser = inngest.createFunction(
   { id: "clerk/create-db-user", name: "Clerk - Create DB User" },
   {
-    event: "user.created",
+    event: "clerk/user.created",
   },
   async ({ event, step }) => {
     console.log("🚨🚨🚨 INNGEST FUNCTION TRIGGERED: user.created 🚨🚨🚨");
@@ -52,7 +52,7 @@ export const clerkCreateUser = inngest.createFunction(
         try {
           debugLog("Starting user creation");
           console.log("📝 Extracting user data from webhook...");
-          const userData = event.data.data.data;
+          const userData = event.data.data;
           debugLog("User data from webhook", userData);
           console.log("👤 User data received from Clerk");
           
@@ -135,8 +135,6 @@ export const clerkCreateUser = inngest.createFunction(
       await step.run("verify-user-inserted", async () => {
         try {
           const { db } = await import("@/drizzle/db");
-          const { UserTable } = await import("@/drizzle/schema");
-          const { eq } = await import("drizzle-orm");
           const { sql } = await import("drizzle-orm");
           
           // Use raw SQL for maximum compatibility
@@ -167,7 +165,7 @@ export const clerkCreateUser = inngest.createFunction(
 
 export const clerkUpdateUser = inngest.createFunction(
   { id: "clerk/update-db-user", name: "Clerk - Update DB User" },
-  { event: "user.updated" },
+  { event: "clerk/user.updated" },
   async ({ event, step }) => {
     await step.run("update-user", async () => {
       const userData = event.data.data
@@ -191,7 +189,7 @@ export const clerkUpdateUser = inngest.createFunction(
 
 export const clerkDeleteUser = inngest.createFunction(
   { id: "clerk/delete-db-user", name: "Clerk - Delete DB User" },
-  { event: "user.deleted" },
+  { event: "clerk/user.deleted" },
   async ({ event, step }) => {
     await step.run("delete-user", async () => {
       const { id } = event.data.data
@@ -210,7 +208,7 @@ export const clerkCreateOrganization = inngest.createFunction(
     name: "Clerk - Create DB Organization",
   },
   {
-    event: "organization.created",
+    event: "clerk/organization.created",
   },
   async ({ event, step }) => {
     await step.run("create-organization", async () => {
@@ -232,7 +230,7 @@ export const clerkUpdateOrganization = inngest.createFunction(
     id: "clerk/update-db-organization",
     name: "Clerk - Update DB Organization",
   },
-  { event: "organization.updated" },
+  { event: "clerk/organization.updated" },
   async ({ event, step }) => {
     await step.run("update-organization", async () => {
       const orgData = event.data.data
@@ -251,7 +249,7 @@ export const clerkDeleteOrganization = inngest.createFunction(
     id: "clerk/delete-db-organization",
     name: "Clerk - Delete DB Organization",
   },
-  { event: "organization.deleted" },
+  { event: "clerk/organization.deleted" },
   async ({ event, step }) => {
     await step.run("delete-organization", async () => {
       const { id } = event.data.data
@@ -270,7 +268,7 @@ export const clerkCreateOrgMembership = inngest.createFunction(
     name: "Clerk - Create Organization User Settings",
   },
   {
-    event: "organizationMembership.created",
+    event: "clerk/organizationMembership.created",
   },
   async ({ event, step }) => {
     await step.run("create-organization-user-settings", async () => {
@@ -291,7 +289,7 @@ export const clerkDeleteOrgMembership = inngest.createFunction(
     name: "Clerk - Delete Organization User Settings",
   },
   {
-    event: "organizationMembership.deleted",
+    event: "clerk/organizationMembership.deleted",
   },
   async ({ event, step }) => {
     await step.run("delete-organization-user-settings", async () => {

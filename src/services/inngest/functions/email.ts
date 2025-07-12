@@ -129,7 +129,7 @@ export const sendDailyUserJobListingEmail = inngest.createFunction(
 
     await step.run("send-email", async () => {
       await resend.emails.send({
-        from: "Job Board <onboarding@resend.dev>",
+        from: "Hire-Sync AI <onboarding@resend.dev>",
         to: user.email,
         subject: "Daily Job Listings",
         react: DailyJobListingEmail({
@@ -280,7 +280,7 @@ export const sendDailyOrganizationUserApplicationEmail = inngest.createFunction(
 
     await step.run("send-email", async () => {
       await resend.emails.send({
-        from: "Job Board <onboarding@resend.dev>",
+        from: "Hire-Sync AI <onboarding@resend.dev>",
         to: user.email,
         subject: "Daily Job Listing Applications",
         react: DailyApplicationEmail({

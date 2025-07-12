@@ -25,7 +25,6 @@ import {
   experienceLevels,
   JobListingTable,
   jobListingTypes,
-  locationRequirementEnum,
   locationRequirements,
   wageIntervals,
 } from "@/drizzle/schema"
@@ -39,7 +38,6 @@ import { StateSelectItems } from "./StateSelectItems"
 import { MarkdownEditor } from "@/components/markdown/MarkdownEditor"
 import { Button } from "@/components/ui/button"
 import { LoadingSwap } from "@/components/LoadingSwap"
-import { Loader2Icon } from "lucide-react"
 import { createJobListing, updateJobListing } from "../actions/actions"
 import { toast } from "sonner"
 
@@ -48,7 +46,7 @@ const NONE_SELECT_VALUE = "none"
 export function JobListingForm({
   jobListing,
 }: {
-  jobListing: Pick<
+  jobListing?: Pick<
     typeof JobListingTable.$inferSelect,
     | "title"
     | "description"

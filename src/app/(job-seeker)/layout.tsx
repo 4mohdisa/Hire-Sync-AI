@@ -24,7 +24,7 @@ export default function JobSeekerLayout({
           <SidebarNavMenuGroup
             className="mt-auto"
             items={[
-              { href: "/", icon: <ClipboardListIcon />, label: "Job Board" },
+              { href: "/", icon: <ClipboardListIcon />, label: "Hire-Sync AI" },
               {
                 href: "/ai-search",
                 icon: <BrainCircuitIcon />,
