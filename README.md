@@ -1,5 +1,7 @@
 # Hire Sync AI - Job Board Platform
 
+![Hire Sync AI Cover](https://tinyurl.com/2yuassas)
+
 A modern, AI-powered job board platform built with Next.js, featuring intelligent job matching, resume analysis, and streamlined hiring workflows.
 
 ## 🚀 Project Overview

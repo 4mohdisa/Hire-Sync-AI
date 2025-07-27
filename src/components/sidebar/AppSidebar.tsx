@@ -28,15 +28,14 @@ export function AppSidebar({
         <Sidebar collapsible="icon" className="overflow-hidden">
           <SidebarHeader className="flex-row">
             <SidebarTrigger />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-2 py-1">
               <Image
                 src="/logo.png"
                 alt="HireSync AI"
-                width={32}
-                height={32}
-                className="shrink-0"
+                width={120}
+                height={120}
+                className="object-contain"
               />
-              <span className="text-xl text-nowrap group-data-[collapsible=icon]:hidden">HireSync AI</span>
             </div>
           </SidebarHeader>
           <SidebarContent>{content}</SidebarContent>
