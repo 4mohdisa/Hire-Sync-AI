@@ -22,10 +22,6 @@ import {
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { hasOrgUserPermission } from "@/services/clerk/lib/orgUserPermissions"
 import { getNextJobListingStatus } from "../lib/utils"
-import {
-  hasReachedMaxFeaturedJobListings,
-  hasReachedMaxPublishedJobListings,
-} from "../lib/planfeatureHelpers"
 import { getMatchingJobListings } from "@/services/inngest/ai/getMatchingJobListings"
 
 export async function createJobListing(
@@ -109,10 +105,7 @@ export async function toggleJobListingStatus(id: string) {
   if (jobListing == null) return error
 
   const newStatus = getNextJobListingStatus(jobListing.status)
-  if (
-    !(await hasOrgUserPermission("org:job_listings:change_status")) ||
-    (newStatus === "published" && (await hasReachedMaxPublishedJobListings()))
-  ) {
+  if (!(await hasOrgUserPermission("org:job_listings:change_status"))) {
     return error
   }
 
@@ -141,10 +134,7 @@ export async function toggleJobListingFeatured(id: string) {
   if (jobListing == null) return error
 
   const newFeaturedStatus = !jobListing.isFeatured
-  if (
-    !(await hasOrgUserPermission("org:job_listings:change_status")) ||
-    (newFeaturedStatus && (await hasReachedMaxFeaturedJobListings()))
-  ) {
+  if (!(await hasOrgUserPermission("org:job_listings:change_status"))) {
     return error
   }
 

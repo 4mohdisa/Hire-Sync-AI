@@ -4,11 +4,6 @@ import { MarkdownPartial } from "@/components/markdown/MarkdownPartial"
 import { MarkdownRenderer } from "@/components/markdown/MarkdownRenderer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { db } from "@/drizzle/db"
 import {
@@ -29,10 +24,6 @@ import {
 import { JobListingBadges } from "@/features/jobListings/components/JobListingBadges"
 import { getJobListingIdTag } from "@/features/jobListings/db/cache/jobListings"
 import { formatJobListingStatus } from "@/features/jobListings/lib/formatters"
-import {
-  hasReachedMaxFeaturedJobListings,
-  hasReachedMaxPublishedJobListings,
-} from "@/features/jobListings/lib/planfeatureHelpers"
 import { getNextJobListingStatus } from "@/features/jobListings/lib/utils"
 import { getUserResumeIdTag } from "@/features/users/db/cache/userResumes"
 import { getUserIdTag } from "@/features/users/db/cache/users"
@@ -50,7 +41,7 @@ import {
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ReactNode, Suspense } from "react"
+import { Suspense } from "react"
 
 type Props = {
   params: Promise<{ jobListingId: string }>
@@ -162,24 +153,7 @@ function StatusUpdateButton({
     <AsyncIf
       condition={() => hasOrgUserPermission("org:job_listings:change_status")}
     >
-      {getNextJobListingStatus(status) === "published" ? (
-        <AsyncIf
-          condition={async () => {
-            const isMaxed = await hasReachedMaxPublishedJobListings()
-            return !isMaxed
-          }}
-          otherwise={
-            <UpgradePopover
-              buttonText={statusToggleButtonText(status)}
-              popoverText="You must upgrade your plan to publish more job listings."
-            />
-          }
-        >
-          {button}
-        </AsyncIf>
-      ) : (
-        button
-      )}
+      {button}
     </AsyncIf>
   )
 }
@@ -204,49 +178,11 @@ function FeaturedToggleButton({
     <AsyncIf
       condition={() => hasOrgUserPermission("org:job_listings:change_status")}
     >
-      {isFeatured ? (
-        button
-      ) : (
-        <AsyncIf
-          condition={async () => {
-            const isMaxed = await hasReachedMaxFeaturedJobListings()
-            return !isMaxed
-          }}
-          otherwise={
-            <UpgradePopover
-              buttonText={featuredToggleButtonText(isFeatured)}
-              popoverText="You must upgrade your plan to feature more job listings."
-            />
-          }
-        >
-          {button}
-        </AsyncIf>
-      )}
+      {button}
     </AsyncIf>
   )
 }
 
-function UpgradePopover({
-  buttonText,
-  popoverText,
-}: {
-  buttonText: ReactNode
-  popoverText: ReactNode
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline">{buttonText}</Button>
-      </PopoverTrigger>
-      <PopoverContent className="flex flex-col gap-2">
-        {popoverText}
-        <Button asChild>
-          <Link href="/employer/pricing">Upgrade Plan</Link>
-        </Button>
-      </PopoverContent>
-    </Popover>
-  )
-}
 
 function statusToggleButtonText(status: JobListingStatus) {
   switch (status) {

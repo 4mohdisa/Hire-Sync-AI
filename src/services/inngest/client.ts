@@ -1,40 +1,8 @@
 import { JobListingApplicationTable, JobListingTable } from "@/drizzle/schema"
-import {
-  DeletedObjectJSON,
-  OrganizationJSON,
-  OrganizationMembershipJSON,
-  UserJSON,
-} from "@clerk/nextjs/server"
 import { EventSchemas, Inngest } from "inngest"
 
-type ClerkWebhookData<T> = {
-  data: {
-    data: T
-    raw: string
-    headers: Record<string, string>
-  }
-}
-
+// Application-specific events only (no Clerk events)
 type Events = {
-  // Clerk webhook events without prefix - actual event types sent by Clerk
-  "user.created": ClerkWebhookData<UserJSON>
-  "user.updated": ClerkWebhookData<UserJSON>
-  "user.deleted": ClerkWebhookData<DeletedObjectJSON>
-  "organization.created": ClerkWebhookData<OrganizationJSON>
-  "organization.updated": ClerkWebhookData<OrganizationJSON>
-  "organization.deleted": ClerkWebhookData<DeletedObjectJSON>
-  "organizationMembership.created": ClerkWebhookData<OrganizationMembershipJSON>
-  "organizationMembership.deleted": ClerkWebhookData<OrganizationMembershipJSON>
-  
-  // Keep the old event types for backward compatibility
-  "clerk/user.created": ClerkWebhookData<UserJSON>
-  "clerk/user.updated": ClerkWebhookData<UserJSON>
-  "clerk/user.deleted": ClerkWebhookData<DeletedObjectJSON>
-  "clerk/organization.created": ClerkWebhookData<OrganizationJSON>
-  "clerk/organization.updated": ClerkWebhookData<OrganizationJSON>
-  "clerk/organization.deleted": ClerkWebhookData<DeletedObjectJSON>
-  "clerk/organizationMembership.created": ClerkWebhookData<OrganizationMembershipJSON>
-  "clerk/organizationMembership.deleted": ClerkWebhookData<OrganizationMembershipJSON>
   "app/jobListingApplication.created": {
     data: {
       jobListingId: string
@@ -88,6 +56,6 @@ export const inngest = new Inngest({
     warn: console.warn,
     error: console.error,
   },
-  // Enable automatic event processing in development
-  isDev: process.env.NODE_ENV !== "production",
+  // Force production mode
+  isDev: false,
 })

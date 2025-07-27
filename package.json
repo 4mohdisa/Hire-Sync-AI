@@ -11,7 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "inngest": "inngest-cli dev -u http://localhost:3002/api/inngest",
+    "inngest": "inngest-cli dev -u https://tennessee-failures-tb-hong.trycloudflare.com/api/inngest",
     "email": "email dev --dir src/services/resend/components --port 3001"
   },
   "dependencies": {
@@ -45,7 +45,6 @@
     "lucide-react": "^0.513.0",
     "next": "^15.3.5",
     "next-mdx-remote": "^5.0.0",
-    "next-themes": "^0.4.6",
     "pg": "^8.16.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
