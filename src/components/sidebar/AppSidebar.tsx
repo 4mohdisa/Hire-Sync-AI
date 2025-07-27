@@ -11,6 +11,7 @@ import {
 import { SignedIn } from "@/services/clerk/components/SignInStatus"
 import { AppSidebarClient } from "./_AppSidebarClient"
 import { ReactNode } from "react"
+import Image from "next/image"
 
 export function AppSidebar({
   children,
@@ -27,7 +28,16 @@ export function AppSidebar({
         <Sidebar collapsible="icon" className="overflow-hidden">
           <SidebarHeader className="flex-row">
             <SidebarTrigger />
-            <span className="text-xl text-nowrap">HireSync AI</span>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="HireSync AI"
+                width={32}
+                height={32}
+                className="shrink-0"
+              />
+              <span className="text-xl text-nowrap group-data-[collapsible=icon]:hidden">HireSync AI</span>
+            </div>
           </SidebarHeader>
           <SidebarContent>{content}</SidebarContent>
           <SignedIn>
