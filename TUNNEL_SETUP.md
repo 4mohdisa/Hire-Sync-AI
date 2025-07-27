@@ -28,27 +28,11 @@ The tunnel will show output like:
 
 ## Team Development Solutions
 
-### Option 1: Localhost Development (Recommended for Teams)
+### Option 1: Localhost Development (NOT RECOMMENDED - Clerk can't reach localhost)
 
-**For team development, use localhost instead of tunnels:**
+**❌ This doesn't work - Clerk webhooks need public URLs:**
 
-1. **Update Clerk Webhook URL to:**
-   ```
-   http://localhost:3000/api/clerk/webhooks
-   ```
-
-2. **Each team member runs:**
-   ```bash
-   npm run dev  # Starts Next.js on localhost:3000
-   ```
-
-3. **Benefits:**
-   - No tunnel setup required
-   - Same URL for all team members
-   - Faster development
-   - No external dependencies
-
-**Note:** This works because Clerk can deliver webhooks to localhost during development.
+Clerk servers cannot reach `http://localhost:3000/api/clerk/webhooks` because localhost is not publicly accessible. You must use tunnels or public URLs.
 
 ### Option 2: Shared Development Environment
 
@@ -110,10 +94,11 @@ npm run dev
 
 ### For Team Development (Recommended)
 ```bash
-# No tunnel needed - use localhost
-npm run dev
+# One person runs tunnel and shares URL with team
+cloudflared tunnel --url http://localhost:3000
 
-# Set Clerk webhook URL to: http://localhost:3000/api/clerk/webhooks
+# Set Clerk webhook URL to the tunnel URL (e.g.):
+# https://unique-tunnel-url.trycloudflare.com/api/clerk/webhooks
 ```
 
 ## Environment Variables for Teams
