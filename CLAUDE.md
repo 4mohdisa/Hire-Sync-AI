@@ -22,6 +22,7 @@ npm run db:studio                 # Open Drizzle Studio at localhost:4983
 npm run dev                       # Next.js dev server with Turbopack
 npm run inngest                   # Inngest dev server (webhook processing)
 npm run email                     # Email dev server at localhost:3001
+cloudflared tunnel --url http://localhost:3000  # Required for Clerk webhooks
 ```
 
 ### Build & Deploy
@@ -129,16 +130,19 @@ Environment variables are validated using `@t3-oss/env-nextjs` in:
 ### Theme System
 **Important**: Dark mode has been completely removed. The platform uses light theme only with a professional blue color scheme.
 
-### Webhook Setup (Simplified)
+### Webhook Setup (IMPORTANT: Tunnels Required)
 
 **For Development**:
-1. **Direct Clerk Webhooks**: Set Clerk webhook URL to `http://localhost:3000/api/clerk/webhooks` (no tunnel needed)
-2. **AI Processing**: Run `npm run inngest` for background tasks
-3. **Database**: `docker compose up -d`
+1. **Start tunnel**: `cloudflared tunnel --url http://localhost:3000` (required - localhost won't work)
+2. **Set Clerk webhook URL**: Use tunnel URL like `https://unique-name.trycloudflare.com/api/clerk/webhooks`
+3. **AI Processing**: Run `npm run inngest` for background tasks
+4. **Database**: `docker compose up -d`
 
 **For Production**:
 1. **Direct Clerk Webhooks**: Set Clerk webhook URL to `https://yourdomain.com/api/clerk/webhooks`
 2. **AI Processing**: Configure Inngest Cloud integration
+
+**Critical**: Clerk webhooks cannot reach localhost - tunnels are mandatory for development.
 
 ### AI Integration Points
 - **Resume Analysis**: `src/services/inngest/functions/resume.ts` - Processes uploaded PDFs with Claude
@@ -167,10 +171,11 @@ Environment variables are validated using `@t3-oss/env-nextjs` in:
 
 ### Common Issues
 - **Port conflicts**: App may run on 3002 if 3000 is occupied
-- **Webhook failures**: Check Clerk dashboard webhook delivery logs
+- **Webhook failures**: Check Clerk dashboard webhook delivery logs and verify tunnel is running
 - **Database connection**: Verify Docker container is running
 - **AI processing**: Only requires Inngest for resume analysis and ranking
-- **Direct webhooks**: Much more reliable than tunnel-based setup
+- **Tunnel issues**: Restart with `pkill -f cloudflared && cloudflared tunnel --url http://localhost:3000`
+- **Team development**: One person runs tunnel, shares URL with team for Clerk webhook configuration
 
 ### File Structure Notes
 - Route handlers in `src/app/api/`
@@ -181,6 +186,18 @@ Environment variables are validated using `@t3-oss/env-nextjs` in:
 - External service integrations in `src/services/`
 
 This platform is production-ready with real-time webhook automation, AI-powered features, and a complete job board workflow.
+
+## Additional Documentation
+
+### Deployment & Configuration Guides
+- **`PRODUCTION_DEPLOYMENT.md`** - Complete production deployment checklist and troubleshooting
+- **`TUNNEL_SETUP.md`** - Detailed tunnel setup for development and team collaboration
+- **`.env.example`** - Complete environment variable template with all required keys
+
+### Key Implementation Files
+- **`src/lib/webhooks/verification.ts`** - Webhook signature verification using svix
+- **`src/lib/webhooks/clerk-types.ts`** - TypeScript schemas for all Clerk webhook events  
+- **`src/app/api/clerk/webhooks/route.ts`** - Direct webhook handlers for user/org CRUD operations
 
 ## Recent Session Context (July 2025)
 
@@ -253,10 +270,13 @@ This platform is production-ready with real-time webhook automation, AI-powered 
 
 ### Current Development State
 - ✅ Webhook migration complete and tested
-- ✅ Build process optimized and working
+- ✅ Build process optimized and working  
 - ✅ Security issues resolved
+- ✅ Logo added to sidebar replacing text-only branding
+- ✅ Comprehensive documentation created (PRODUCTION_DEPLOYMENT.md, TUNNEL_SETUP.md)
+- ✅ Tunnel setup corrected - localhost webhooks confirmed non-functional
 - 🔄 Production deployment pending environment configuration
 - 🔄 Database migration to production pending
 - 🔄 Clerk production keys configuration pending
 
-This session successfully eliminated the need for manual webhook intervention and prepared the platform for production deployment.
+This session successfully eliminated the need for manual webhook intervention, added professional branding, and prepared comprehensive deployment documentation.
