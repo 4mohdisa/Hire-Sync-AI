@@ -1,7 +1,6 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next"
 import { UploadThingError } from "uploadthing/server"
-import { getCurrentUser } from "../clerk/lib/getCurrentAuth"
-import { inngest } from "../inngest/client"
+import { getCurrentUser } from "../supabase/auth"
 import { upsertUserResume } from "@/features/users/db/userResumes"
 import { db } from "@/drizzle/db"
 import { eq } from "drizzle-orm"
@@ -39,8 +38,8 @@ export const customFileRouter = {
         await uploadthing.deleteFiles(resumeFileKey)
       }
 
-      await inngest.send({ name: "app/resume.uploaded", user: { id: userId } })
-
+      // TODO: Add direct AI resume processing here if needed
+      
       return { message: "Resume uploaded successfully" }
     }),
 } satisfies FileRouter
@@ -49,11 +48,11 @@ export type CustomFileRouter = typeof customFileRouter
 
 async function getUserResumeFileKey(userId: string) {
   const data = await db.query.UserResumeTable.findFirst({
-    where: eq(UserResumeTable.userId, userId),
+    where: eq(UserResumeTable.user_id, userId), // Use snake_case
     columns: {
-      resumeFileKey: true,
+      resume_file_key: true, // Use snake_case
     },
   })
 
-  return data?.resumeFileKey
+  return data?.resume_file_key
 }

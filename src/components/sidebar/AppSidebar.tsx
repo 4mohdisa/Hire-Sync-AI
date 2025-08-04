@@ -8,7 +8,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { SignedIn } from "@/services/clerk/components/SignInStatus"
+import { SignedIn } from "@/services/supabase/components/AuthStatus"
 import { AppSidebarClient } from "./_AppSidebarClient"
 import { ReactNode } from "react"
 import Image from "next/image"

@@ -1,5 +1,6 @@
-import { SignUp } from "@clerk/nextjs"
+import { redirect } from "next/navigation"
 
 export default function Page() {
-  return <SignUp />
+  // Redirect to our new Supabase sign-up page
+  redirect('/auth/sign-up')
 }

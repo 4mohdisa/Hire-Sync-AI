@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { JobListingAiSearchForm } from "@/features/jobListings/components/JobListingAiSearchForm"
-import { SignUpButton } from "@/services/clerk/components/AuthButtons"
-import { getCurrentUser } from "@/services/clerk/lib/getCurrentAuth"
+import { SignUpButton } from "@/services/supabase/components/AuthButtons"
+import { getCurrentUser } from "@/services/supabase/auth"
 
 export default function AiSearchPage() {
   return (

@@ -2,7 +2,7 @@
 
 import { z } from "zod"
 import { userNotificationSettingsSchema } from "./schemas"
-import { getCurrentUser } from "@/services/clerk/lib/getCurrentAuth"
+import { getCurrentUser } from "@/services/supabase/auth"
 import { updateUserNotificationSettings as updateUserNotificationSettingsDb } from "@/features/users/db/userNotificationSettings"
 
 export async function updateUserNotificationSettings(

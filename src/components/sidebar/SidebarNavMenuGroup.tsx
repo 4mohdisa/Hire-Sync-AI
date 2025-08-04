@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "../ui/sidebar"
-import { SignedIn, SignedOut } from "@/services/clerk/components/SignInStatus"
+import { SignedIn, SignedOut } from "@/services/supabase/components/AuthStatus"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 

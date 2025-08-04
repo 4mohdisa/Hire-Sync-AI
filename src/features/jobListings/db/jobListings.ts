@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db"
 import { JobListingTable } from "@/drizzle/schema"
-import { revalidateJobListingCache } from "./cache/jobListings"
+import { revalidateJobListingCacheUser } from "./cache/jobListings"
 import { eq } from "drizzle-orm"
 
 export async function insertJobListing(
@@ -11,10 +11,10 @@ export async function insertJobListing(
     .values(jobListing)
     .returning({
       id: JobListingTable.id,
-      organizationId: JobListingTable.organizationId,
+      user_id: JobListingTable.user_id,
     })
 
-  revalidateJobListingCache(newListing)
+  revalidateJobListingCacheUser({ id: newListing.id, userId: newListing.user_id })
 
   return newListing
 }
@@ -29,10 +29,10 @@ export async function updateJobListing(
     .where(eq(JobListingTable.id, id))
     .returning({
       id: JobListingTable.id,
-      organizationId: JobListingTable.organizationId,
+      user_id: JobListingTable.user_id,
     })
 
-  revalidateJobListingCache(updatedListing)
+  revalidateJobListingCacheUser({ id: updatedListing.id, userId: updatedListing.user_id })
 
   return updatedListing
 }
@@ -43,10 +43,10 @@ export async function deleteJobListing(id: string) {
     .where(eq(JobListingTable.id, id))
     .returning({
       id: JobListingTable.id,
-      organizationId: JobListingTable.organizationId,
+      user_id: JobListingTable.user_id,
     })
 
-  revalidateJobListingCache(deletedJobListing)
+  revalidateJobListingCacheUser({ id: deletedJobListing.id, userId: deletedJobListing.user_id })
 
   return deletedJobListing
 }

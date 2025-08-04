@@ -1,7 +1,7 @@
 import { db } from "@/drizzle/db"
 import { JobListingTable } from "@/drizzle/schema"
-import { getJobListingOrganizationTag } from "@/features/jobListings/db/cache/jobListings"
-import { getCurrentOrganization } from "@/services/clerk/lib/getCurrentAuth"
+import { getJobListingUserTag } from "@/features/jobListings/db/cache/jobListings"
+import { getCurrentUser } from "@/services/supabase/auth"
 import { desc, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { redirect } from "next/navigation"
@@ -16,10 +16,10 @@ export default function EmployerHomePage() {
 }
 
 async function SuspendedPage() {
-  const { orgId } = await getCurrentOrganization()
-  if (orgId == null) return null
+  const { userId } = await getCurrentUser()
+  if (userId == null) return null
 
-  const jobListing = await getMostRecentJobListing(orgId)
+  const jobListing = await getMostRecentJobListing(userId)
   if (jobListing == null) {
     redirect("/employer/job-listings/new")
   } else {
@@ -27,12 +27,12 @@ async function SuspendedPage() {
   }
 }
 
-async function getMostRecentJobListing(orgId: string) {
+async function getMostRecentJobListing(userId: string) {
   "use cache"
-  cacheTag(getJobListingOrganizationTag(orgId))
+  cacheTag(getJobListingUserTag(userId))
 
   return db.query.JobListingTable.findFirst({
-    where: eq(JobListingTable.organizationId, orgId),
+    where: eq(JobListingTable.user_id, userId),
     orderBy: desc(JobListingTable.createdAt),
     columns: { id: true },
   })

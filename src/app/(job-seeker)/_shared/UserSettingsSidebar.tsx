@@ -1,5 +1,5 @@
 import { SidebarNavMenuGroup } from "@/components/sidebar/SidebarNavMenuGroup"
-import { BellIcon, FileUserIcon } from "lucide-react"
+import { BellIcon, FileUserIcon, BrainIcon } from "lucide-react"
 
 export function UserSettingsSidebar() {
   return (
@@ -14,6 +14,11 @@ export function UserSettingsSidebar() {
           href: "/user-settings/resume",
           icon: <FileUserIcon />,
           label: "Resume",
+        },
+        {
+          href: "/user-settings/ai-agent",
+          icon: <BrainIcon />,
+          label: "AI Agent",
         },
       ]}
     />

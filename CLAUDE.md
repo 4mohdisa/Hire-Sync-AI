@@ -4,41 +4,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Hire Sync AI is a completely free job board platform built with Next.js 15, featuring AI-powered job matching, resume analysis, and automated hiring workflows. The platform was recently converted from a paid/freemium model to completely free with unlimited features.
+Hire Sync AI is a completely free job board platform built with Next.js 15, featuring AI-powered job matching, resume analysis, and automated hiring workflows. The platform was recently migrated from Clerk to Supabase authentication with a simplified user-centric architecture.
 
 ## Development Commands
 
 ### Database Operations
 ```bash
-docker compose up -d              # Start PostgreSQL database
 npm run db:push                   # Push schema changes to database (development)
 npm run db:generate               # Generate migrations
 npm run db:migrate                # Run migrations (production)
 npm run db:studio                 # Open Drizzle Studio at localhost:4983
+npm run db:setup-supabase         # Setup Supabase database and RLS policies
+npm run db:migrate-data           # Migrate data from backup (migration helper)
+npm run db:verify-migration       # Verify migrated data integrity
 ```
 
 ### Development Servers
 ```bash
 npm run dev                       # Next.js dev server with Turbopack
-npm run inngest                   # Inngest dev server (webhook processing)
 npm run email                     # Email dev server at localhost:3001
-cloudflared tunnel --url http://localhost:3000  # Required for Clerk webhooks
 ```
 
 ### Build & Deploy
 ```bash
 npm run lint                      # ESLint check
 npm run build                     # Production build
-npm start                        # Start production server
+npm run start                     # Start production server
 ```
 
 ## Architecture Overview
 
 ### Core Technology Stack
 - **Frontend**: Next.js 15 with App Router, React 19, TypeScript
-- **Database**: PostgreSQL with Drizzle ORM (no migrations - schema push only)
-- **Authentication**: Clerk with organization support
-- **Background Jobs**: Inngest workflow engine with webhook automation
+- **Database**: Supabase PostgreSQL with Drizzle ORM (cloud-hosted)
+- **Authentication**: Supabase Auth with email/password (no email confirmation)
 - **AI Services**: Anthropic Claude for resume analysis and job matching
 - **File Storage**: UploadThing for resume/document handling
 - **Email**: Resend for transactional emails
@@ -50,8 +49,7 @@ npm start                        # Start production server
 ```
 src/features/
 ├── jobListings/        # Job posting, search, management
-├── organizations/      # Company/employer management
-├── users/             # User profiles and settings
+├── users/             # User profiles and settings  
 └── jobListingApplications/  # Application tracking
 ```
 
@@ -61,58 +59,73 @@ Each feature follows the pattern:
 - `db/` - Database queries and cache tags
 - `lib/` - Feature-specific utilities
 
-#### Hybrid Webhook Architecture
-The platform uses a hybrid approach for optimal performance and simplicity:
+#### User-Centric Data Architecture
+**CRITICAL**: The platform uses a simplified user-centric model (no organizations):
+- Users directly own job listings and applications
+- No multi-tenant/organization structure
+- All foreign keys use `onDelete: "cascade"` for proper user deletion
+- Published jobs are viewable by anonymous users via RLS policies
 
-**Direct Clerk Webhooks** (Simple CRUD operations):
-- `user.created`, `user.updated`, `user.deleted` - Direct database sync
-- `organization.created`, `organization.updated`, `organization.deleted` - Immediate processing
-- `organizationMembership.created`, `organizationMembership.deleted` - Direct settings management
-- Endpoint: `/api/clerk/webhooks` - No tunnel required for development
+#### Route Structure
+```
+src/app/
+├── (job-seeker)/       # Main job board interface
+│   ├── page.tsx        # Homepage with job listings  
+│   ├── ai-search/      # AI-powered job search
+│   ├── job-listings/   # Job detail pages
+│   └── user-settings/  # User settings (notifications, resume, ai-agent)
+├── employer/           # Employer dashboard (user-owned jobs)
+├── auth/              # Supabase Auth pages (sign-in/sign-up)
+├── ai-agent-demo/     # Public demo page (no auth required)
+└── api/auth/          # User sync and debug endpoints
+```
 
-**Inngest for Complex Processing**:
-- `app/resume.uploaded` - Resume upload → AI analysis
-- `app/jobListingApplication.created` - Application → AI ranking
-- Daily email notifications and cron jobs
-- Endpoint: `/api/inngest` - Only for AI/background tasks
+#### Supabase Authentication & User Sync
+**CRITICAL**: The platform has a hybrid authentication approach:
 
-#### Database Schema Key Points
-- All foreign keys use `onDelete: "cascade"` for proper user/org deletion
-- No plan/payment related fields (completely free platform)
-- Schema changes use `npm run db:push` (no migrations in development)
+**Supabase Auth**: Handles authentication in `auth.users` table
+**App Users Table**: Stores user profiles in app's `users` table  
+**Automatic Sync**: `SupabaseProvider` automatically syncs users between both tables
 
-### Multi-Tenant Organization Structure
-- Users can belong to multiple organizations
-- Organizations have role-based permissions via Clerk
-- Job listings and applications are scoped to organizations
-- User settings are per-organization (organizationUserSettings)
+This prevents "User Already Exists" errors by ensuring users exist in both Supabase Auth and the app's database.
+
+## Database Schema Structure
+
+### Current Schema (User-Centric)
+```typescript
+// src/drizzle/schema.ts - exports all tables
+export * from "./schema/user"                    // Users (synced with Supabase Auth)
+export * from "./schema/jobListing"             // Jobs (user_id owner)  
+export * from "./schema/userResume"             // User resumes
+export * from "./schema/userNotificationSettings" // User preferences
+export * from "./schema/jobListingApplication"   // Applications
+```
+
+**Key Schema Details**:
+- All tables use `snake_case` field names for Supabase compatibility
+- Foreign keys have `onDelete: "cascade"` for proper cleanup
+- No organization/plan-related fields (completely free platform)
+- UUID primary keys throughout
 
 ## Environment Configuration
 
 ### Required Environment Variables
 ```bash
-# Database (Docker)
-DB_USER=postgres
-DB_PASSWORD=password  
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=hiresyncai
+# Supabase Configuration (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SERVICE_ROLE_KEY=your_supabase_service_role_key
+DATABASE_URL=postgresql://postgres:[password]@db.your-project.supabase.co:5432/postgres
 
-# Clerk Authentication
-CLERK_WEBHOOK_SECRET=whsec_...
-CLERK_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+# Optional: Additional settings
+JWT_SECRET=your_jwt_secret
+PROJECT_URL=http://localhost:3000
+SERVER_URL=http://localhost:3000
 
-# Services
-ANTHROPIC_API_KEY=sk-ant-api03-...
-UPLOADTHING_TOKEN=eyJhcGlLZXk...
-RESEND_API_KEY=re_...
-
-# Inngest (varies by environment)
-INNGEST_CLIENT_ID=hire-sync-ai
-INNGEST_SIGNING_KEY=signkey-...
-INNGEST_EVENT_KEY=...
-INNGEST_DEV_SERVER_URL=http://localhost:3000/api/inngest
+# External Services (Optional)
+UPLOADTHING_TOKEN=your_uploadthing_token
+ANTHROPIC_API_KEY=your_anthropic_api_key
+RESEND_API_KEY=your_resend_api_key
 ```
 
 ### Environment Validation
@@ -122,161 +135,127 @@ Environment variables are validated using `@t3-oss/env-nextjs` in:
 
 ## Critical Development Context
 
-### Payment System Removal
-**Important**: All plan/payment logic has been removed. The following always return true/unlimited:
-- `src/services/clerk/lib/planFeatures.ts` - Feature access
-- `src/features/jobListings/lib/planfeatureHelpers.ts` - Usage limits
+### Recent Major Migration (January 2025)
+**Status**: ✅ COMPLETED - Major architectural changes
 
-### Theme System
-**Important**: Dark mode has been completely removed. The platform uses light theme only with a professional blue color scheme.
+**Authentication Migration**:
+- **From**: Clerk authentication with organizations
+- **To**: Supabase Auth with user-centric model
+- **Key Changes**: Removed all organization dependencies, simplified to user ownership
 
-### Webhook Setup (IMPORTANT: Tunnels Required)
+**User Sync Implementation**:
+- **Problem Solved**: "User Already Exists" error when Supabase Auth and app users table were out of sync
+- **Solution**: Automatic user sync in `SupabaseProvider` via `/api/auth/sync-user`
+- **Result**: Users are automatically created in app's `users` table when they sign in/up
 
-**For Development**:
-1. **Start tunnel**: `cloudflared tunnel --url http://localhost:3000` (required - localhost won't work)
-2. **Set Clerk webhook URL**: Use tunnel URL like `https://unique-name.trycloudflare.com/api/clerk/webhooks`
-3. **AI Processing**: Run `npm run inngest` for background tasks
-4. **Database**: `docker compose up -d`
+**Architecture Simplification**:
+- **Removed**: Multi-tenant organization structure
+- **Added**: Direct user ownership of all data
+- **Updated**: All queries and permissions to use `user_id` instead of `organizationId`
 
-**For Production**:
-1. **Direct Clerk Webhooks**: Set Clerk webhook URL to `https://yourdomain.com/api/clerk/webhooks`
-2. **AI Processing**: Configure Inngest Cloud integration
+### Key System Features
 
-**Critical**: Clerk webhooks cannot reach localhost - tunnels are mandatory for development.
-
-### AI Integration Points
-- **Resume Analysis**: `src/services/inngest/functions/resume.ts` - Processes uploaded PDFs with Claude
-- **Job Matching**: `src/services/inngest/ai/getMatchingJobListings.ts` - AI-powered job recommendations
-- **Content Processing**: Uses Anthropic Claude API for text analysis
+**Payment System**: Completely removed - platform is entirely free
+**Theme System**: Light mode only (dark mode removed)  
+**AI Agent Demo**: Added public demo page accessible without authentication
+**User Settings**: Notifications, Resume, and AI Agent configuration tabs
 
 ## Development Workflow
 
 ### Adding New Features
-1. Create feature directory in `src/features/`
-2. Add database schema in `src/drizzle/schema/`
-3. Create server actions with Zod validation
-4. Add Inngest events if background processing needed
-5. Use `npm run db:push` to apply schema changes
+1. Create feature directory in `src/features/` following the established pattern
+2. Add database schema in `src/drizzle/schema/[table].ts` using snake_case fields
+3. Export new schema from `src/drizzle/schema.ts`
+4. Use `npm run db:push` to apply schema changes
+5. Add RLS policies in Supabase Dashboard for user data access
+6. Implement user-centric queries (always filter by `user_id`)
 
-### Database Changes
-- **Development**: Use `npm run db:push` (no migrations)
-- **Production**: Generate migrations with `npm run db:generate`
-- Always include `onDelete: "cascade"` for foreign keys
+### Database Development
+- **Schema Changes**: Use `npm run db:push` (development)
+- **RLS Policies**: Essential for user data security in Supabase
+- **Foreign Keys**: Always include `onDelete: "cascade"` for proper cleanup
+- **Testing**: Use `npm run db:studio` to inspect data
 
-### Testing Webhooks
-1. **User/Org CRUD**: Register user → Check database directly (immediate sync)
-2. **AI Processing**: Upload resume → Check Inngest dashboard for event processing
-3. **Database**: Use Drizzle Studio to verify changes
-4. **Logs**: Monitor Next.js logs for webhook processing status
+### Authentication Testing
+1. **Anonymous Browsing**: Visit `/` - should show job listings without errors
+2. **Sign Up**: Use `/auth/sign-up` - immediate account creation (no email confirmation)
+3. **User Sync**: Verify users appear in both Supabase Auth and app's `users` table
+4. **AI Agent Demo**: Test `/ai-agent-demo` page (accessible without auth)
 
-### Common Issues
-- **Port conflicts**: App may run on 3002 if 3000 is occupied
-- **Webhook failures**: Check Clerk dashboard webhook delivery logs and verify tunnel is running
-- **Database connection**: Verify Docker container is running
-- **AI processing**: Only requires Inngest for resume analysis and ranking
-- **Tunnel issues**: Restart with `pkill -f cloudflared && cloudflared tunnel --url http://localhost:3000`
-- **Team development**: One person runs tunnel, shares URL with team for Clerk webhook configuration
+### Debug and Maintenance Tools
+```bash
+# User sync debugging
+curl http://localhost:3000/api/auth/debug-users        # Shows sync status
+curl -X POST http://localhost:3000/api/auth/sync-users # Manual bulk sync
+curl -X POST http://localhost:3000/api/auth/sync-user  # Single user sync
+```
 
-### File Structure Notes
-- Route handlers in `src/app/api/`
-- Page components in `src/app/(group)/page.tsx`
-- Shared UI components in `src/components/ui/`
-- Feature-specific components in `src/features/[feature]/components/`
-- Database schemas in `src/drizzle/schema/`
-- External service integrations in `src/services/`
+## Key Implementation Files
 
-This platform is production-ready with real-time webhook automation, AI-powered features, and a complete job board workflow.
+### Authentication & User Management
+- **`src/services/supabase/server.ts`** - Server-side Supabase client for SSR
+- **`src/services/supabase/client.ts`** - Client-side Supabase client
+- **`src/services/supabase/auth.ts`** - Authentication utilities with error handling
+- **`src/services/supabase/components/SupabaseProvider.tsx`** - Auto user sync logic
+- **`src/app/auth/`** - Sign-in/sign-up pages with proper SSR handling
 
-## Additional Documentation
+### Database & Schema
+- **`src/drizzle/db.ts`** - Pure Supabase database connection (no Docker fallbacks)
+- **`src/drizzle/schema.ts`** - Schema exports (simplified user-centric model)
+- **`src/drizzle/schema/*.ts`** - Individual table definitions with snake_case fields
 
-### Deployment & Configuration Guides
-- **`PRODUCTION_DEPLOYMENT.md`** - Complete production deployment checklist and troubleshooting
-- **`TUNNEL_SETUP.md`** - Detailed tunnel setup for development and team collaboration
-- **`.env.example`** - Complete environment variable template with all required keys
+### Core Features
+- **`src/app/(job-seeker)/`** - Main job board with sidebar navigation
+- **`src/app/employer/`** - Employer dashboard (user-owned jobs)
+- **`src/app/ai-agent-demo/`** - Public AI Agent showcase (no auth required)
+- **`src/features/`** - Feature modules with actions, components, db queries
 
-### Key Implementation Files
-- **`src/lib/webhooks/verification.ts`** - Webhook signature verification using svix
-- **`src/lib/webhooks/clerk-types.ts`** - TypeScript schemas for all Clerk webhook events  
-- **`src/app/api/clerk/webhooks/route.ts`** - Direct webhook handlers for user/org CRUD operations
+### AI Features
+- **`src/app/(job-seeker)/user-settings/ai-agent/`** - AI Agent settings page
+- **`src/features/users/components/AIAgentForm.tsx`** - Comprehensive AI configuration form
+- **`src/app/ai-agent-demo/`** - Public demo showcasing AI automation features
 
-## Recent Session Context (July 2025)
+## Common Development Issues
 
-### Webhook Migration Completed
-**Migration from Inngest Cloud to Direct Clerk Webhooks** - Successfully implemented hybrid architecture:
+### Authentication Issues
+- **User sync problems**: Check `SupabaseProvider` auto-sync and debug endpoints
+- **RLS access denied**: Verify policies exist for anonymous job viewing
+- **Session errors**: Ensure proper server client configuration
 
-**What Was Done**:
-- ✅ Created direct webhook handlers in `src/app/api/clerk/webhooks/route.ts`
-- ✅ Removed Clerk events from Inngest, kept only AI processing events
-- ✅ Fixed TypeScript lint errors in webhook handlers
-- ✅ Updated webhook verification using `svix` library
-- ✅ Eliminated manual "Send event to dev server" clicks in Inngest Cloud
-- ✅ Successfully built and deployed webhook migration
+### Database Issues  
+- **Connection failures**: Check `DATABASE_URL` matches Supabase project
+- **Schema conflicts**: Use `npm run db:push` to sync changes
+- **User deletion**: Confirmed working with cascade foreign keys
 
-**Architecture After Migration**:
-- **Direct Clerk Webhooks**: Handle user/org CRUD operations immediately
-- **Inngest for AI Only**: Resume analysis, job ranking, email notifications
-- **Real-time Processing**: No manual intervention required
-- **Simplified Development**: No tunnel needed for Clerk webhooks
+### Build Issues
+- **Import errors**: Check for removed Clerk/organization imports
+- **Type errors**: Ensure schema exports match imports
+- **ESLint warnings**: Non-critical, focus on compilation errors
 
-### Production Deployment Issues & Solutions
+## Recent Development Sessions
 
-**Current Production Status**: Site deployed at `hire-sync-ai.vercel.app` but showing errors
+### January 2025: Complete Architecture Migration ✅
 
-**Critical Issues Identified**:
-1. **Development Clerk Keys**: Using `pk_test_` and `sk_test_` keys in production
-2. **Missing Environment Variables**: Vercel not configured with all required env vars
-3. **Database Connection**: Production database not properly configured
-4. **Server Error**: `Application error: a server-side exception has occurred` (Digest: 265885447)
+**User Authentication Fix**:
+- **Problem**: "User Already Exists" error due to Supabase Auth/app user table mismatch
+- **Solution**: Implemented automatic user sync in `SupabaseProvider`
+- **Result**: Seamless user creation in both Supabase Auth and app database
 
-**Fixes Implemented**:
-- ✅ Created `PRODUCTION_DEPLOYMENT.md` with complete deployment guide
-- ✅ Added `favicon.ico` to fix 404 errors
-- ✅ Documented all required Vercel environment variables
-- ✅ Provided steps for Clerk production instance setup
-- ✅ Added database configuration options (Railway, Supabase, Neon)
+**AI Agent Feature Addition**:
+- **Added**: Comprehensive AI Agent settings page for job application automation
+- **Features**: Job preferences, agent behavior settings, pre-filled answers
+- **Demo Page**: Public showcase at `/ai-agent-demo` (no authentication required)
+- **Integration**: Added to user settings navigation with brain icon
 
-**Immediate Actions Required**:
-1. Set up Clerk production instance with `pk_live_` and `sk_live_` keys
-2. Configure all environment variables in Vercel dashboard
-3. Set up production PostgreSQL database with proper connection URL
-4. Update webhook URLs to production endpoints
-5. Run database migrations in production environment
+**Architecture Simplification**:
+- **Removed**: All Clerk dependencies and organization structure
+- **Migrated**: To user-centric data ownership model
+- **Cleaned**: Removed payment system and dark mode (free platform, light theme only)
+- **Database**: Pure Supabase connection with proper RLS policies
 
-### Security Improvements
-**Environment Security** - Fixed exposed secrets:
-- ✅ Removed `.env` from git tracking
-- ✅ Updated `.gitignore` to properly ignore env files
-- ✅ Updated `.env.example` with all current variables
-- ✅ Sanitized API keys from repository history
-
-### Files Modified in Recent Session
-- `src/app/api/clerk/webhooks/route.ts` - Direct webhook handlers
-- `src/lib/webhooks/verification.ts` - Webhook verification utility
-- `src/lib/webhooks/clerk-types.ts` - TypeScript schemas for Clerk events
-- `src/services/inngest/client.ts` - Removed Clerk events, kept AI processing
-- `src/app/api/inngest/route.ts` - Simplified to AI functions only
-- `.env` - Removed from tracking, secrets sanitized
-- `.gitignore` - Updated to ignore .env files
-- `.env.example` - Updated with all current environment variables
-- `PRODUCTION_DEPLOYMENT.md` - Complete production deployment guide
-- `src/app/favicon.ico` - Added to fix production 404 errors
-
-### Development Context Notes
-- **Webhook Processing**: Fully automated, no manual intervention required
-- **Build Status**: All TypeScript lint errors fixed, production build successful
-- **Architecture**: Hybrid approach optimizes for both simplicity and performance
-- **Security**: All secrets properly secured and excluded from repository
-- **Production Ready**: Infrastructure complete, requires environment configuration
-
-### Current Development State
-- ✅ Webhook migration complete and tested
-- ✅ Build process optimized and working  
-- ✅ Security issues resolved
-- ✅ Logo added to sidebar replacing text-only branding
-- ✅ Comprehensive documentation created (PRODUCTION_DEPLOYMENT.md, TUNNEL_SETUP.md)
-- ✅ Tunnel setup corrected - localhost webhooks confirmed non-functional
-- 🔄 Production deployment pending environment configuration
-- 🔄 Database migration to production pending
-- 🔄 Clerk production keys configuration pending
-
-This session successfully eliminated the need for manual webhook intervention, added professional branding, and prepared comprehensive deployment documentation.
+**Current Status**:
+- ✅ Build compiles successfully with working authentication
+- ✅ User sync prevents "User Already Exists" errors  
+- ✅ AI Agent demo ready for showcase without authentication
+- ✅ Database schema clean with proper cascade deletion
+- ✅ All legacy code removed and replaced with Supabase equivalents

@@ -1,21 +1,19 @@
-import { pgTable, varchar } from "drizzle-orm/pg-core"
-import { createdAt, updatedAt } from "../schemaHelpers"
+import { pgTable, varchar, timestamp, uuid } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { UserResumeTable } from "./userResume"
 import { UserNotificationSettingsTable } from "./userNotificationSettings"
-import { OrganizationUserSettingsTable } from "./organizationUserSettings"
 
 export const UserTable = pgTable("users", {
-  id: varchar().primaryKey(),
-  name: varchar().notNull(),
-  imageUrl: varchar().notNull(),
+  id: uuid().primaryKey().defaultRandom(), // Use UUID instead of Clerk ID
   email: varchar().notNull().unique(),
-  createdAt,
-  updatedAt,
+  name: varchar(),
+  image_url: varchar("image_url"), // Use snake_case to match database
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const userRelations = relations(UserTable, ({ one, many }) => ({
+export const userRelations = relations(UserTable, ({ one }) => ({
   notificationSettings: one(UserNotificationSettingsTable),
   resume: one(UserResumeTable),
-  organizationUserSettings: many(OrganizationUserSettingsTable),
+  // jobListings relation will be defined in jobListing.ts to avoid circular imports
 }))

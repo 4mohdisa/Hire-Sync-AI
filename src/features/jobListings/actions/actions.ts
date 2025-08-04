@@ -5,7 +5,7 @@ import { jobListingAiSearchSchema, jobListingSchema } from "./schemas"
 import {
   getCurrentOrganization,
   getCurrentUser,
-} from "@/services/clerk/lib/getCurrentAuth"
+} from "@/services/supabase/auth"
 import { redirect } from "next/navigation"
 import {
   insertJobListing,
@@ -20,17 +20,17 @@ import {
   getJobListingIdTag,
 } from "../db/cache/jobListings"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import { hasOrgUserPermission } from "@/services/clerk/lib/orgUserPermissions"
+import { hasOrgUserPermission } from "@/services/supabase/permissions"
 import { getNextJobListingStatus } from "../lib/utils"
-import { getMatchingJobListings } from "@/services/inngest/ai/getMatchingJobListings"
+// TODO: Replace with direct AI job matching function
 
 export async function createJobListing(
   unsafeData: z.infer<typeof jobListingSchema>
 ) {
-  const { orgId } = await getCurrentOrganization()
+  const { userId } = await getCurrentOrganization()
 
   if (
-    orgId == null ||
+    userId == null ||
     !(await hasOrgUserPermission("org:job_listings:create"))
   ) {
     return {
@@ -49,7 +49,7 @@ export async function createJobListing(
 
   const jobListing = await insertJobListing({
     ...data,
-    organizationId: orgId,
+    user_id: userId,
     status: "draft",
   })
 
@@ -60,10 +60,10 @@ export async function updateJobListing(
   id: string,
   unsafeData: z.infer<typeof jobListingSchema>
 ) {
-  const { orgId } = await getCurrentOrganization()
+  const { userId } = await getCurrentOrganization()
 
   if (
-    orgId == null ||
+    userId == null ||
     !(await hasOrgUserPermission("org:job_listings:update"))
   ) {
     return {
@@ -80,7 +80,7 @@ export async function updateJobListing(
     }
   }
 
-  const jobListing = await getJobListing(id, orgId)
+  const jobListing = await getJobListing(id, userId)
   if (jobListing == null) {
     return {
       error: true,
@@ -98,10 +98,10 @@ export async function toggleJobListingStatus(id: string) {
     error: true,
     message: "You don't have permission to update this job listing's status",
   }
-  const { orgId } = await getCurrentOrganization()
-  if (orgId == null) return error
+  const { userId } = await getCurrentOrganization()
+  if (userId == null) return error
 
-  const jobListing = await getJobListing(id, orgId)
+  const jobListing = await getJobListing(id, userId)
   if (jobListing == null) return error
 
   const newStatus = getNextJobListingStatus(jobListing.status)
@@ -127,10 +127,10 @@ export async function toggleJobListingFeatured(id: string) {
     message:
       "You don't have permission to update this job listing's featured status",
   }
-  const { orgId } = await getCurrentOrganization()
-  if (orgId == null) return error
+  const { userId } = await getCurrentOrganization()
+  if (userId == null) return error
 
-  const jobListing = await getJobListing(id, orgId)
+  const jobListing = await getJobListing(id, userId)
   if (jobListing == null) return error
 
   const newFeaturedStatus = !jobListing.isFeatured
@@ -150,10 +150,10 @@ export async function deleteJobListing(id: string) {
     error: true,
     message: "You don't have permission to delete this job listing",
   }
-  const { orgId } = await getCurrentOrganization()
-  if (orgId == null) return error
+  const { userId } = await getCurrentOrganization()
+  if (userId == null) return error
 
-  const jobListing = await getJobListing(id, orgId)
+  const jobListing = await getJobListing(id, userId)
   if (jobListing == null) return error
 
   if (!(await hasOrgUserPermission("org:job_listings:delete"))) {
@@ -187,13 +187,15 @@ export async function getAiJobListingSearchResults(
   }
 
   const allListings = await getPublicJobListings()
-  const matchedListings = await getMatchingJobListings(
-    data.query,
-    allListings,
-    {
-      maxNumberOfJobs: 10,
-    }
-  )
+  
+  // TODO: Replace with proper AI matching - for now return simple text search
+  const matchedListings = allListings
+    .filter(job => 
+      job.title.toLowerCase().includes(data.query.toLowerCase()) ||
+      job.description.toLowerCase().includes(data.query.toLowerCase())
+    )
+    .slice(0, 10)
+    .map(job => job.id)
 
   if (matchedListings.length === 0) {
     return {
@@ -205,14 +207,14 @@ export async function getAiJobListingSearchResults(
   return { error: false, jobIds: matchedListings }
 }
 
-async function getJobListing(id: string, orgId: string) {
+async function getJobListing(id: string, userId: string) {
   "use cache"
   cacheTag(getJobListingIdTag(id))
 
   return db.query.JobListingTable.findFirst({
     where: and(
       eq(JobListingTable.id, id),
-      eq(JobListingTable.organizationId, orgId)
+      eq(JobListingTable.user_id, userId)
     ),
   })
 }

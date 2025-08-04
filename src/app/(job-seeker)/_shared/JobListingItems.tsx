@@ -12,7 +12,7 @@ import {
   JobListingTable,
   jobListingTypes,
   locationRequirements,
-  OrganizationTable,
+  UserTable,
 } from "@/drizzle/schema"
 import { convertSearchParamsToString } from "@/lib/convertSearchParamsToString"
 import { cn } from "@/lib/utils"
@@ -27,7 +27,7 @@ import { JobListingBadges } from "@/features/jobListings/components/JobListingBa
 import { z } from "zod"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { getJobListingGlobalTag } from "@/features/jobListings/db/cache/jobListings"
-import { getOrganizationIdTag } from "@/features/organizations/db/cache/organizations"
+// Remove organization cache tags since we're user-based now
 
 type Props = {
   searchParams: Promise<Record<string, string | string[]>>
@@ -80,7 +80,7 @@ async function SuspendedComponent({ searchParams, params }: Props) {
         >
           <JobListingListItem
             jobListing={jobListing}
-            organization={jobListing.organization}
+            user={jobListing.user}
           />
         </Link>
       ))}
@@ -90,42 +90,42 @@ async function SuspendedComponent({ searchParams, params }: Props) {
 
 function JobListingListItem({
   jobListing,
-  organization,
+  user,
 }: {
   jobListing: Pick<
     typeof JobListingTable.$inferSelect,
     | "title"
-    | "stateAbbreviation"
+    | "state_abbreviation" // Use snake_case to match schema
     | "city"
     | "wage"
-    | "wageInterval"
-    | "experienceLevel"
+    | "wage_interval" // Use snake_case to match schema
+    | "experience_level" // Use snake_case to match schema
     | "type"
-    | "postedAt"
-    | "locationRequirement"
-    | "isFeatured"
+    | "posted_at" // Use snake_case to match schema
+    | "location_requirement" // Use snake_case to match schema
+    | "is_featured" // Use snake_case to match schema
   >
-  organization: Pick<typeof OrganizationTable.$inferSelect, "name" | "imageUrl">
+  user: Pick<typeof UserTable.$inferSelect, "name" | "image_url"> // Use snake_case to match schema
 }) {
-  const nameInitials = organization?.name
-    .split(" ")
+  const nameInitials = user?.name
+    ?.split(" ")
     .splice(0, 4)
     .map(word => word[0])
-    .join("")
+    .join("") || "U"
 
   return (
     <Card
       className={cn(
         "@container",
-        jobListing.isFeatured && "border-featured bg-featured/20"
+        jobListing.is_featured && "border-featured bg-featured/20" // Use snake_case
       )}
     >
       <CardHeader>
         <div className="flex gap-4">
           <Avatar className="size-14 @max-sm:hidden">
             <AvatarImage
-              src={organization.imageUrl ?? undefined}
-              alt={organization.name}
+              src={user.image_url ?? undefined} // Use snake_case
+              alt={user.name || "User"}
             />
             <AvatarFallback className="uppercase bg-primary text-primary-foreground">
               {nameInitials}
@@ -134,20 +134,20 @@ function JobListingListItem({
           <div className="flex flex-col gap-1">
             <CardTitle className="text-xl">{jobListing.title}</CardTitle>
             <CardDescription className="text-base">
-              {organization.name}
+              Posted by {user.name || "Anonymous User"}
             </CardDescription>
-            {jobListing.postedAt != null && (
+            {jobListing.posted_at != null && ( // Use snake_case
               <div className="text-sm font-medium text-primary @min-md:hidden">
-                <Suspense fallback={jobListing.postedAt.toLocaleDateString()}>
-                  <DaysSincePosting postedAt={jobListing.postedAt} />
+                <Suspense fallback={jobListing.posted_at.toLocaleDateString()}>
+                  <DaysSincePosting postedAt={jobListing.posted_at} /> {/* Use snake_case */}
                 </Suspense>
               </div>
             )}
           </div>
-          {jobListing.postedAt != null && (
+          {jobListing.posted_at != null && ( // Use snake_case
             <div className="text-sm font-medium text-primary ml-auto @max-md:hidden">
-              <Suspense fallback={jobListing.postedAt.toLocaleDateString()}>
-                <DaysSincePosting postedAt={jobListing.postedAt} />
+              <Suspense fallback={jobListing.posted_at.toLocaleDateString()}>
+                <DaysSincePosting postedAt={jobListing.posted_at} /> {/* Use snake_case */}
               </Suspense>
             </div>
           )}
@@ -156,7 +156,7 @@ function JobListingListItem({
       <CardContent className="flex flex-wrap gap-2">
         <JobListingBadges
           jobListing={jobListing}
-          className={jobListing.isFeatured ? "border-primary/35" : undefined}
+          className={jobListing.is_featured ? "border-primary/35" : undefined} // Use snake_case
         />
       </CardContent>
     </Card>
@@ -223,31 +223,62 @@ async function getJobListings(
     )
   }
 
-  const data = await db.query.JobListingTable.findMany({
-    where: or(
-      jobListingId
-        ? and(
-            eq(JobListingTable.status, "published"),
-            eq(JobListingTable.id, jobListingId)
-          )
-        : undefined,
-      and(eq(JobListingTable.status, "published"), ...whereConditions)
-    ),
-    with: {
-      organization: {
-        columns: {
-          id: true,
-          name: true,
-          imageUrl: true,
+  let data
+  try {
+    // Try to query with user data first
+    data = await db.query.JobListingTable.findMany({
+      where: or(
+        jobListingId
+          ? and(
+              eq(JobListingTable.status, "published"),
+              eq(JobListingTable.id, jobListingId)
+            )
+          : undefined,
+        and(eq(JobListingTable.status, "published"), ...whereConditions)
+      ),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            name: true,
+            image_url: true, // Use snake_case to match schema
+          },
         },
       },
-    },
-    orderBy: [desc(JobListingTable.isFeatured), desc(JobListingTable.postedAt)],
-  })
+      orderBy: [desc(JobListingTable.is_featured), desc(JobListingTable.posted_at)] // Use snake_case,
+    })
+  } catch (error) {
+    console.log('RLS error accessing user data, falling back to job listings only:', error)
+    // Fallback: Query without user data if RLS prevents access
+    data = await db.query.JobListingTable.findMany({
+      where: or(
+        jobListingId
+          ? and(
+              eq(JobListingTable.status, "published"),
+              eq(JobListingTable.id, jobListingId)
+            )
+          : undefined,
+        and(eq(JobListingTable.status, "published"), ...whereConditions)
+      ),
+      orderBy: [desc(JobListingTable.is_featured), desc(JobListingTable.posted_at)] // Use snake_case,
+    })
+    
+    // Add placeholder user data
+    data = data.map(job => ({
+      ...job,
+      user: {
+        id: job.user_id, // Use snake_case field name
+        name: "Anonymous User",
+        image_url: "" // Use snake_case to match schema
+      }
+    }))
+  }
 
-  data.forEach(listing => {
-    cacheTag(getOrganizationIdTag(listing.organization.id))
-  })
+  // Cache tags for users instead of organizations
+  // We can add user-specific cache tags here if needed in the future
+  // data.forEach(listing => {
+  //   cacheTag(getUserIdTag(listing.user.id))
+  // })
 
   return data
 }

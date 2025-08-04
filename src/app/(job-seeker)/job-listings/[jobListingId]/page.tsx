@@ -18,7 +18,7 @@ import {
   UserResumeTable,
 } from "@/drizzle/schema"
 import { db } from "@/drizzle/db"
-import { getOrganizationIdTag } from "@/features/organizations/db/cache/organizations"
+// Removed organization cache tags - using user-based system now
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -27,13 +27,13 @@ import { convertSearchParamsToString } from "@/lib/convertSearchParamsToString"
 import { XIcon } from "lucide-react"
 import { JobListingBadges } from "@/features/jobListings/components/JobListingBadges"
 import { MarkdownRenderer } from "@/components/markdown/MarkdownRenderer"
-import { getCurrentUser } from "@/services/clerk/lib/getCurrentAuth"
+import { getCurrentUser } from "@/services/supabase/auth"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { SignUpButton } from "@/services/clerk/components/AuthButtons"
+import { SignUpButton } from "@/services/supabase/components/AuthButtons"
 import { getJobListingApplicationIdTag } from "@/features/jobListingApplications/db/cache/jobListingApplications"
 import { differenceInDays } from "date-fns"
 import { connection } from "next/server"
@@ -292,9 +292,7 @@ async function getJobListing(id: string) {
     },
   })
 
-  if (listing != null) {
-    cacheTag(getOrganizationIdTag(listing.organization.id))
-  }
+  // Organization cache tags removed - using user-based system now
 
   return listing
 }

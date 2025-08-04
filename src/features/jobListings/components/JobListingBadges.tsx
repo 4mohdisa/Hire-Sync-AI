@@ -20,26 +20,26 @@ import {
 export function JobListingBadges({
   jobListing: {
     wage,
-    wageInterval,
-    stateAbbreviation,
+    wage_interval,
+    state_abbreviation,
     city,
     type,
-    experienceLevel,
-    locationRequirement,
-    isFeatured,
+    experience_level,
+    location_requirement,
+    is_featured,
   },
   className,
 }: {
   jobListing: Pick<
     typeof JobListingTable.$inferSelect,
     | "wage"
-    | "wageInterval"
-    | "stateAbbreviation"
+    | "wage_interval"
+    | "state_abbreviation"
     | "city"
     | "type"
-    | "experienceLevel"
-    | "locationRequirement"
-    | "isFeatured"
+    | "experience_level"
+    | "location_requirement"
+    | "is_featured"
   >
   className?: string
 }) {
@@ -50,7 +50,7 @@ export function JobListingBadges({
 
   return (
     <>
-      {isFeatured && (
+      {is_featured && (
         <Badge
           {...badgeProps}
           className={cn(
@@ -61,21 +61,21 @@ export function JobListingBadges({
           Featured
         </Badge>
       )}
-      {wage != null && wageInterval != null && (
+      {wage != null && wage_interval != null && (
         <Badge {...badgeProps}>
           <BanknoteIcon />
-          {formatWage(wage, wageInterval)}
+          {formatWage(wage, wage_interval)}
         </Badge>
       )}
-      {(stateAbbreviation != null || city != null) && (
+      {(state_abbreviation != null || city != null) && (
         <Badge {...badgeProps}>
           <MapPinIcon className="size-10" />
-          {formatJobListingLocation({ stateAbbreviation, city })}
+          {formatJobListingLocation({ stateAbbreviation: state_abbreviation, city })}
         </Badge>
       )}
       <Badge {...badgeProps}>
         <BuildingIcon />
-        {formatLocationRequirement(locationRequirement)}
+        {formatLocationRequirement(location_requirement)}
       </Badge>
       <Badge {...badgeProps}>
         <HourglassIcon />
@@ -83,7 +83,7 @@ export function JobListingBadges({
       </Badge>
       <Badge {...badgeProps}>
         <GraduationCapIcon />
-        {formatExperienceLevel(experienceLevel)}
+        {formatExperienceLevel(experience_level)}
       </Badge>
     </>
   )

@@ -12,7 +12,7 @@ import { getUserResumeIdTag } from "@/features/users/db/cache/userResumes"
 import {
   getCurrentOrganization,
   getCurrentUser,
-} from "@/services/clerk/lib/getCurrentAuth"
+} from "@/services/supabase/auth"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { z } from "zod"
@@ -21,8 +21,7 @@ import {
   insertJobListingApplication,
   updateJobListingApplication,
 } from "../db/jobListingsApplications"
-import { inngest } from "@/services/inngest/client"
-import { hasOrgUserPermission } from "@/services/clerk/lib/orgUserPermissions"
+import { hasOrgUserPermission } from "@/services/supabase/permissions"
 
 export async function createJobListingApplication(
   jobListingId: string,
@@ -56,10 +55,7 @@ export async function createJobListingApplication(
     ...data,
   })
 
-  await inngest.send({
-    name: "app/jobListingApplication.created",
-    data: { jobListingId, userId },
-  })
+  // TODO: Add direct application ranking/processing here if needed
 
   return {
     error: false,

@@ -3,32 +3,36 @@ import { z } from "zod"
 
 export const env = createEnv({
   server: {
-    DB_PASSWORD: z.string().min(1),
-    DB_USER: z.string().min(1),
-    DB_HOST: z.string().min(1),
-    DB_PORT: z.string().min(1),
-    DB_NAME: z.string().min(1),
-    CLERK_SECRET_KEY: z.string().min(1),
-    CLERK_WEBHOOK_SECRET: z.string().min(1),
-    UPLOADTHING_TOKEN: z.string().min(1),
-    ANTHROPIC_API_KEY: z.string().min(1),
-    GEMINI_API_KEY: z.string().min(1),
-    RESEND_API_KEY: z.string().min(1),
-    SERVER_URL: z.string().min(1),
-    INNGEST_CLIENT_ID: z.string().min(1),
-    INNGEST_SIGNING_KEY: z.string().optional(),
-    INNGEST_EVENT_KEY: z.string().optional(),
+    // Project Configuration
+    PROJECT_URL: z.string().optional().default("http://localhost:3000"),
+    
+    // Database Configuration (Supabase)
+    DATABASE_URL: z.string().min(1, "DATABASE_URL is required for Supabase connection"),
+    
+    // Supabase Configuration
+    SUPABASE_URL: z.string().optional(),
+    SUPABASE_ANON_KEY: z.string().optional(),
+    SERVICE_ROLE_KEY: z.string().optional(),
+    JWT_SECRET: z.string().optional(),
+    
+    // External Services
+    UPLOADTHING_TOKEN: z.string().optional(),
+    ANTHROPIC_API_KEY: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
+    SERVER_URL: z.string().optional(),
   },
-  createFinalSchema: env => {
-    return z.object(env).transform(val => {
-      const { DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER, ...rest } = val
-
-      return {
-        ...rest,
-        DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
-      }
-    })
+  // Pass environment variables through
+  experimental__runtimeEnv: {
+    PROJECT_URL: process.env.PROJECT_URL || "http://localhost:3000",
+    DATABASE_URL: process.env.DATABASE_URL,
+    SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SERVICE_ROLE_KEY: process.env.SERVICE_ROLE_KEY,
+    JWT_SECRET: process.env.JWT_SECRET,
+    UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    SERVER_URL: process.env.SERVER_URL,
   },
   emptyStringAsUndefined: true,
-  experimental__runtimeEnv: process.env,
 })

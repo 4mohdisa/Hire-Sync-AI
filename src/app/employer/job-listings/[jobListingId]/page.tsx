@@ -1,5 +1,4 @@
 import { ActionButton } from "@/components/ActionButton"
-import { AsyncIf } from "@/components/AsyncIf"
 import { MarkdownPartial } from "@/components/markdown/MarkdownPartial"
 import { MarkdownRenderer } from "@/components/markdown/MarkdownRenderer"
 import { Badge } from "@/components/ui/badge"
@@ -27,8 +26,7 @@ import { formatJobListingStatus } from "@/features/jobListings/lib/formatters"
 import { getNextJobListingStatus } from "@/features/jobListings/lib/utils"
 import { getUserResumeIdTag } from "@/features/users/db/cache/userResumes"
 import { getUserIdTag } from "@/features/users/db/cache/users"
-import { getCurrentOrganization } from "@/services/clerk/lib/getCurrentAuth"
-import { hasOrgUserPermission } from "@/services/clerk/lib/orgUserPermissions"
+import { getCurrentUser } from "@/services/supabase/auth"
 import { and, eq } from "drizzle-orm"
 import {
   EditIcon,
@@ -56,11 +54,11 @@ export default function JobListingPage(props: Props) {
 }
 
 async function SuspendedPage({ params }: Props) {
-  const { orgId } = await getCurrentOrganization()
-  if (orgId == null) return null
+  const { userId } = await getCurrentUser()
+  if (userId == null) return null
 
   const { jobListingId } = await params
-  const jobListing = await getJobListing(jobListingId, orgId)
+  const jobListing = await getJobListing(jobListingId, userId)
   if (jobListing == null) return notFound()
 
   return (
@@ -76,35 +74,27 @@ async function SuspendedPage({ params }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2 empty:-mt-4">
-          <AsyncIf
-            condition={() => hasOrgUserPermission("org:job_listings:update")}
-          >
-            <Button asChild variant="outline">
-              <Link href={`/employer/job-listings/${jobListing.id}/edit`}>
-                <EditIcon className="size-4" />
-                Edit
-              </Link>
-            </Button>
-          </AsyncIf>
+          <Button asChild variant="outline">
+            <Link href={`/employer/job-listings/${jobListing.id}/edit`}>
+              <EditIcon className="size-4" />
+              Edit
+            </Link>
+          </Button>
           <StatusUpdateButton status={jobListing.status} id={jobListing.id} />
           {jobListing.status === "published" && (
             <FeaturedToggleButton
-              isFeatured={jobListing.isFeatured}
+              isFeatured={jobListing.is_featured} // Use snake_case
               id={jobListing.id}
             />
           )}
-          <AsyncIf
-            condition={() => hasOrgUserPermission("org:job_listings:delete")}
+          <ActionButton
+            variant="destructive"
+            action={deleteJobListing.bind(null, jobListing.id)}
+            requireAreYouSure
           >
-            <ActionButton
-              variant="destructive"
-              action={deleteJobListing.bind(null, jobListing.id)}
-              requireAreYouSure
-            >
-              <Trash2Icon className="size-4" />
-              Delete
-            </ActionButton>
-          </AsyncIf>
+            <Trash2Icon className="size-4" />
+            Delete
+          </ActionButton>
         </div>
       </div>
 
@@ -149,13 +139,7 @@ function StatusUpdateButton({
     </ActionButton>
   )
 
-  return (
-    <AsyncIf
-      condition={() => hasOrgUserPermission("org:job_listings:change_status")}
-    >
-      {button}
-    </AsyncIf>
-  )
+  return button
 }
 
 function FeaturedToggleButton({
@@ -174,13 +158,7 @@ function FeaturedToggleButton({
     </ActionButton>
   )
 
-  return (
-    <AsyncIf
-      condition={() => hasOrgUserPermission("org:job_listings:change_status")}
-    >
-      {button}
-    </AsyncIf>
-  )
+  return button
 }
 
 
@@ -246,12 +224,8 @@ async function Applications({ jobListingId }: { jobListingId: string }) {
           <MarkdownRenderer source={a.coverLetter} />
         ) : null,
       }))}
-      canUpdateRating={await hasOrgUserPermission(
-        "org:job_listing_applications:change_rating"
-      )}
-      canUpdateStage={await hasOrgUserPermission(
-        "org:job_listing_applications:change_stage"
-      )}
+      canUpdateRating={true}
+      canUpdateStage={true}
     />
   )
 }
@@ -296,14 +270,14 @@ async function getJobListingApplications(jobListingId: string) {
   return data
 }
 
-async function getJobListing(id: string, orgId: string) {
+async function getJobListing(id: string, userId: string) {
   "use cache"
   cacheTag(getJobListingIdTag(id))
 
   return db.query.JobListingTable.findFirst({
     where: and(
       eq(JobListingTable.id, id),
-      eq(JobListingTable.organizationId, orgId)
+      eq(JobListingTable.user_id, userId)
     ),
   })
 }

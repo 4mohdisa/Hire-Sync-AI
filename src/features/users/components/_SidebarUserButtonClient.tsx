@@ -10,8 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar"
-import { SignOutButton } from "@/services/clerk/components/AuthButtons"
-import { useClerk } from "@clerk/nextjs"
+import { SignOutButton } from "@/services/supabase/components/AuthButtons"
 import {
   ChevronsUpDown,
   LogOutIcon,
@@ -28,7 +27,6 @@ type User = {
 
 export function SidebarUserButtonClient({ user }: { user: User }) {
   const { isMobile, setOpenMobile } = useSidebar()
-  const { openUserProfile } = useClerk()
 
   return (
     <DropdownMenu>
@@ -51,13 +49,10 @@ export function SidebarUserButtonClient({ user }: { user: User }) {
           <UserInfo {...user} />
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => {
-            openUserProfile()
-            setOpenMobile(false)
-          }}
-        >
-          <UserIcon className="mr-1" /> Profile
+        <DropdownMenuItem asChild>
+          <Link href="/user-settings/profile">
+            <UserIcon className="mr-1" /> Profile
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/user-settings/notifications">
