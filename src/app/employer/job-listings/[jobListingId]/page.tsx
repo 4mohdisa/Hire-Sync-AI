@@ -26,7 +26,7 @@ import { formatJobListingStatus } from "@/features/jobListings/lib/formatters"
 import { getNextJobListingStatus } from "@/features/jobListings/lib/utils"
 import { getUserResumeIdTag } from "@/features/users/db/cache/userResumes"
 import { getUserIdTag } from "@/features/users/db/cache/users"
-import { getCurrentUser } from "@/services/supabase/auth"
+import { requireOrganizationAuth } from "@/services/supabase/organization-auth"
 import { and, eq } from "drizzle-orm"
 import {
   EditIcon,
@@ -54,11 +54,10 @@ export default function JobListingPage(props: Props) {
 }
 
 async function SuspendedPage({ params }: Props) {
-  const { userId } = await getCurrentUser()
-  if (userId == null) return null
+  const { organizationId } = await requireOrganizationAuth()
 
   const { jobListingId } = await params
-  const jobListing = await getJobListing(jobListingId, userId)
+  const jobListing = await getJobListing(jobListingId, organizationId)
   if (jobListing == null) return notFound()
 
   return (
@@ -209,20 +208,22 @@ async function Applications({ jobListingId }: { jobListingId: string }) {
     <ApplicationTable
       applications={applications.map(a => ({
         ...a,
+        createdAt: a.created_at,
+        jobListingId: a.job_listing_id,
         user: {
-          ...a.user,
-          resume: a.user.resume
+          ...a.applicant,
+          imageUrl: a.applicant.image_url,
+          resume: a.applicant.resumes && a.applicant.resumes[0]
             ? {
-                ...a.user.resume,
-                markdownSummary: a.user.resume.aiSummary ? (
-                  <MarkdownRenderer source={a.user.resume.aiSummary} />
+                ...a.applicant.resumes[0],
+                resumeFileUrl: a.applicant.resumes[0].url,
+                markdownSummary: a.applicant.resumes[0].ai_summary ? (
+                  <MarkdownRenderer source={a.applicant.resumes[0].ai_summary} />
                 ) : null,
               }
             : null,
         },
-        coverLetterMarkdown: a.coverLetter ? (
-          <MarkdownRenderer source={a.coverLetter} />
-        ) : null,
+        coverLetterMarkdown: null, // Cover letter not available in current schema
       }))}
       canUpdateRating={true}
       canUpdateStage={true}
@@ -235,26 +236,19 @@ async function getJobListingApplications(jobListingId: string) {
   cacheTag(getJobListingApplicationJobListingTag(jobListingId))
 
   const data = await db.query.JobListingApplicationTable.findMany({
-    where: eq(JobListingApplicationTable.jobListingId, jobListingId),
-    columns: {
-      coverLetter: true,
-      createdAt: true,
-      stage: true,
-      rating: true,
-      jobListingId: true,
-    },
+    where: eq(JobListingApplicationTable.job_listing_id, jobListingId),
     with: {
-      user: {
+      applicant: {
         columns: {
           id: true,
           name: true,
-          imageUrl: true,
+          image_url: true,
         },
         with: {
-          resume: {
+          resumes: {
             columns: {
-              resumeFileUrl: true,
-              aiSummary: true,
+              url: true,
+              ai_summary: true,
             },
           },
         },
@@ -262,22 +256,22 @@ async function getJobListingApplications(jobListingId: string) {
     },
   })
 
-  data.forEach(({ user }) => {
-    cacheTag(getUserIdTag(user.id))
-    cacheTag(getUserResumeIdTag(user.id))
+  data.forEach(({ applicant }) => {
+    cacheTag(getUserIdTag(applicant.id))
+    cacheTag(getUserResumeIdTag(applicant.id))
   })
 
   return data
 }
 
-async function getJobListing(id: string, userId: string) {
+async function getJobListing(id: string, organizationId: string) {
   "use cache"
   cacheTag(getJobListingIdTag(id))
 
   return db.query.JobListingTable.findFirst({
     where: and(
       eq(JobListingTable.id, id),
-      eq(JobListingTable.user_id, userId)
+      eq(JobListingTable.organization_id, organizationId)
     ),
   })
 }

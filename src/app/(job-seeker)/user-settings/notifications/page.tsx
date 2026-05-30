@@ -7,7 +7,6 @@ import { getUserNotificationSettingsIdTag } from "@/features/users/db/cache/user
 import { getCurrentUser } from "@/services/supabase/auth"
 import { eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
 export default function NotificationsPage() {
@@ -20,7 +19,12 @@ export default function NotificationsPage() {
 
 async function SuspendedComponent() {
   const { userId } = await getCurrentUser()
-  if (userId == null) return notFound()
+  
+  
+  // If no server userId, use client-side hybrid approach
+  if (userId == null) {
+    return <NotificationsHybridWrapper />
+  }
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -36,6 +40,9 @@ async function SuspendedComponent() {
   )
 }
 
+// Client component wrapper for notifications
+import { NotificationsHybridWrapper } from "@/features/users/components/NotificationsHybridWrapper"
+
 async function SuspendedForm({ userId }: { userId: string }) {
   const notificationSettings = await getNotificationSettings(userId)
 
@@ -47,10 +54,10 @@ async function getNotificationSettings(userId: string) {
   cacheTag(getUserNotificationSettingsIdTag(userId))
 
   return db.query.UserNotificationSettingsTable.findFirst({
-    where: eq(UserNotificationSettingsTable.userId, userId),
+    where: eq(UserNotificationSettingsTable.user_id, userId),
     columns: {
-      aiPrompt: true,
-      newJobEmailNotifications: true,
+      new_job_alerts: true,
+      email_notifications: true,
     },
   })
 }

@@ -3,9 +3,11 @@
 import { z } from "zod"
 import { jobListingAiSearchSchema, jobListingSchema } from "./schemas"
 import {
-  getCurrentOrganization,
   getCurrentUser,
 } from "@/services/supabase/auth"
+import { 
+  requireOrganizationAuth 
+} from "@/services/supabase/organization-auth"
 import { redirect } from "next/navigation"
 import {
   insertJobListing,
@@ -20,24 +22,15 @@ import {
   getJobListingIdTag,
 } from "../db/cache/jobListings"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
-import { hasOrgUserPermission } from "@/services/supabase/permissions"
+// Removed organization permission imports as we use user-based permissions
 import { getNextJobListingStatus } from "../lib/utils"
 // TODO: Replace with direct AI job matching function
 
 export async function createJobListing(
   unsafeData: z.infer<typeof jobListingSchema>
 ) {
-  const { userId } = await getCurrentOrganization()
-
-  if (
-    userId == null ||
-    !(await hasOrgUserPermission("org:job_listings:create"))
-  ) {
-    return {
-      error: true,
-      message: "You don't have permission to create a job listing",
-    }
-  }
+  // Require organization authentication
+  const { organizationId } = await requireOrganizationAuth()
 
   const { success, data } = jobListingSchema.safeParse(unsafeData)
   if (!success) {
@@ -48,29 +41,27 @@ export async function createJobListing(
   }
 
   const jobListing = await insertJobListing({
-    ...data,
-    user_id: userId,
+    title: data.title,
+    description: data.description,
+    experience_level: data.experienceLevel,
+    location_requirement: data.locationRequirement,
+    type: data.type,
+    wage: data.wage,
+    wage_interval: data.wageInterval,
+    state_abbreviation: data.stateAbbreviation,
+    city: data.city,
+    organization_id: organizationId,
     status: "draft",
   })
 
-  redirect(`/employer/job-listings/${jobListing.id}`)
+  redirect(`/organization/job-listings/${jobListing.id}`)
 }
 
 export async function updateJobListing(
   id: string,
   unsafeData: z.infer<typeof jobListingSchema>
 ) {
-  const { userId } = await getCurrentOrganization()
-
-  if (
-    userId == null ||
-    !(await hasOrgUserPermission("org:job_listings:update"))
-  ) {
-    return {
-      error: true,
-      message: "You don't have permission to update this job listing",
-    }
-  }
+  const { organizationId } = await requireOrganizationAuth()
 
   const { success, data } = jobListingSchema.safeParse(unsafeData)
   if (!success) {
@@ -80,7 +71,7 @@ export async function updateJobListing(
     }
   }
 
-  const jobListing = await getJobListing(id, userId)
+  const jobListing = await getOrganizationJobListing(id, organizationId)
   if (jobListing == null) {
     return {
       error: true,
@@ -88,9 +79,19 @@ export async function updateJobListing(
     }
   }
 
-  const updatedJobListing = await updateJobListingDb(id, data)
+  const updatedJobListing = await updateJobListingDb(id, {
+    title: data.title,
+    description: data.description,
+    experience_level: data.experienceLevel,
+    location_requirement: data.locationRequirement,
+    type: data.type,
+    wage: data.wage,
+    wage_interval: data.wageInterval,
+    state_abbreviation: data.stateAbbreviation,
+    city: data.city,
+  })
 
-  redirect(`/employer/job-listings/${updatedJobListing.id}`)
+  redirect(`/organization/job-listings/${updatedJobListing.id}`)
 }
 
 export async function toggleJobListingStatus(id: string) {
@@ -98,22 +99,19 @@ export async function toggleJobListingStatus(id: string) {
     error: true,
     message: "You don't have permission to update this job listing's status",
   }
-  const { userId } = await getCurrentOrganization()
-  if (userId == null) return error
+  const { organizationId } = await requireOrganizationAuth()
 
-  const jobListing = await getJobListing(id, userId)
+  const jobListing = await getOrganizationJobListing(id, organizationId)
   if (jobListing == null) return error
 
   const newStatus = getNextJobListingStatus(jobListing.status)
-  if (!(await hasOrgUserPermission("org:job_listings:change_status"))) {
-    return error
-  }
+  // Permission check handled by user ownership verification
 
   await updateJobListingDb(id, {
     status: newStatus,
-    isFeatured: newStatus === "published" ? undefined : false,
-    postedAt:
-      newStatus === "published" && jobListing.postedAt == null
+    is_featured: newStatus === "published" ? undefined : false,
+    posted_at:
+      newStatus === "published" && jobListing.posted_at == null
         ? new Date()
         : undefined,
   })
@@ -127,19 +125,16 @@ export async function toggleJobListingFeatured(id: string) {
     message:
       "You don't have permission to update this job listing's featured status",
   }
-  const { userId } = await getCurrentOrganization()
-  if (userId == null) return error
+  const { organizationId } = await requireOrganizationAuth()
 
-  const jobListing = await getJobListing(id, userId)
+  const jobListing = await getOrganizationJobListing(id, organizationId)
   if (jobListing == null) return error
 
-  const newFeaturedStatus = !jobListing.isFeatured
-  if (!(await hasOrgUserPermission("org:job_listings:change_status"))) {
-    return error
-  }
+  const newFeaturedStatus = !jobListing.is_featured
+  // Permission check handled by user ownership verification
 
   await updateJobListingDb(id, {
-    isFeatured: newFeaturedStatus,
+    is_featured: newFeaturedStatus,
   })
 
   return { error: false }
@@ -150,19 +145,16 @@ export async function deleteJobListing(id: string) {
     error: true,
     message: "You don't have permission to delete this job listing",
   }
-  const { userId } = await getCurrentOrganization()
-  if (userId == null) return error
+  const { organizationId } = await requireOrganizationAuth()
 
-  const jobListing = await getJobListing(id, userId)
+  const jobListing = await getOrganizationJobListing(id, organizationId)
   if (jobListing == null) return error
 
-  if (!(await hasOrgUserPermission("org:job_listings:delete"))) {
-    return error
-  }
+  // Permission check handled by organization ownership verification
 
   await deleteJobListingDb(id)
 
-  redirect("/employer")
+  redirect("/organization/dashboard")
 }
 
 export async function getAiJobListingSearchResults(
@@ -207,14 +199,14 @@ export async function getAiJobListingSearchResults(
   return { error: false, jobIds: matchedListings }
 }
 
-async function getJobListing(id: string, userId: string) {
+async function getOrganizationJobListing(id: string, organizationId: string) {
   "use cache"
   cacheTag(getJobListingIdTag(id))
 
   return db.query.JobListingTable.findFirst({
     where: and(
       eq(JobListingTable.id, id),
-      eq(JobListingTable.user_id, userId)
+      eq(JobListingTable.organization_id, organizationId)
     ),
   })
 }

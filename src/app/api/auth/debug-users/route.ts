@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/services/supabase/server'
 import { db } from '@/drizzle/db'
 import { UserTable } from '@/drizzle/schema'

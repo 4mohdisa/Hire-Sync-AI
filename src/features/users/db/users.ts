@@ -6,7 +6,9 @@ import { revalidateUserCache } from "./cache/users"
 export async function insertUser(user: typeof UserTable.$inferInsert) {
   await db.insert(UserTable).values(user).onConflictDoNothing()
 
-  revalidateUserCache(user.id)
+  if (user.id) {
+    revalidateUserCache(user.id)
+  }
 }
 
 export async function updateUser(

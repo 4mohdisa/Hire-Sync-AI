@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid } from "drizzle-orm/pg-core"
+import { pgTable, text, varchar, timestamp, uuid, boolean } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { UserTable } from "./user"
 
@@ -11,6 +11,7 @@ export const UserResumeTable = pgTable("user_resumes", {
   url: varchar().notNull(),
   text: text(),
   ai_summary: text("ai_summary"), // Use snake_case
+  is_primary: boolean("is_primary").notNull().default(false), // Mark primary resume
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), // Use snake_case
   updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(), // Use snake_case
 })

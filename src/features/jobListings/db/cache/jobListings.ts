@@ -13,6 +13,10 @@ export function getJobListingUserTag(userId: string) {
   return getUserTag("jobListings", userId)
 }
 
+export function getJobListingOrganizationTag(organizationId: string) {
+  return `jobListings-organization-${organizationId}`
+}
+
 export function revalidateJobListingCacheUser({
   id,
   userId,
@@ -22,5 +26,17 @@ export function revalidateJobListingCacheUser({
 }) {
   revalidateTag(getJobListingGlobalTag())
   revalidateTag(getJobListingUserTag(userId))
+  revalidateTag(getJobListingIdTag(id))
+}
+
+export function revalidateJobListingCacheOrganization({
+  id,
+  organizationId,
+}: {
+  id: string
+  organizationId: string
+}) {
+  revalidateTag(getJobListingGlobalTag())
+  revalidateTag(getJobListingOrganizationTag(organizationId))
   revalidateTag(getJobListingIdTag(id))
 }

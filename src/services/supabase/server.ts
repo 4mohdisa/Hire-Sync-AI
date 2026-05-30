@@ -32,25 +32,66 @@ export const createServerSupabaseClient = async () => {
     SUPABASE_ANON_KEY, // Use anon key for user authentication
     {
       cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
-        set: (name: string, value: string, options: any) => {
+        get: (name: string) => {
+          const value = cookieStore.get(name)?.value
+          return value
+        },
+        set: (name: string, value: string, options: Record<string, unknown>) => {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
+          } catch {
             // Server components can't set cookies, ignore
           }
         },
-        remove: (name: string, options: any) => {
+        remove: (name: string, options: Record<string, unknown>) => {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
+          } catch {
             // Server components can't remove cookies, ignore
           }
         },
       },
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      }
+    }
+  )
+}
+
+// Unified server authentication function for API routes and middleware
+export const createServerSupabaseClientForAuth = async () => {
+  const cookieStore = await cookies()
+  
+  if (process.env.NODE_ENV === 'development') {
+    const allCookies = cookieStore.getAll()
+    console.log('Available cookies for auth:', allCookies.filter(c => 
+      c.name.includes('supabase') || c.name.includes('sb-')
+    ).map(c => c.name))
+  }
+  
+  return createServerClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get: (name: string) => {
+          const value = cookieStore.get(name)?.value
+          if (process.env.NODE_ENV === 'development' && name.includes('supabase')) {
+            console.log(`Auth cookie read - ${name}: ${value ? 'found' : 'missing'}`)
+          }
+          return value
+        },
+        set: () => {}, // No-op for server
+        remove: () => {}, // No-op for server
+      },
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
       }
     }
   )

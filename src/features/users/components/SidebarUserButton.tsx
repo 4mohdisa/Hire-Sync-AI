@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { SidebarUserButtonClient } from "./_SidebarUserButtonClient"
+import { SidebarUserButtonHybrid } from "./_SidebarUserButtonHybrid"
 import { getCurrentUser } from "@/services/supabase/auth"
 import { SidebarMenuButton } from "@/components/ui/sidebar"
 import { UserIcon } from "lucide-react"
@@ -29,23 +29,16 @@ async function SidebarUserSuspense() {
 
     if (user == null) {
       return (
-        <SidebarMenuButton asChild>
-          <a href="/auth/sign-in">
+        <a href="/auth/sign-in">
+          <SidebarMenuButton>
             <UserIcon />
             <span>Sign In</span>
-          </a>
-        </SidebarMenuButton>
+          </SidebarMenuButton>
+        </a>
       )
     }
 
-    // Transform Supabase user to expected format
-    const transformedUser = {
-      name: user.user_metadata?.name || user.email?.split('@')[0] || "User",
-      email: user.email || "",
-      imageUrl: user.user_metadata?.avatar_url || ""
-    };
-
-    return <SidebarUserButtonClient user={transformedUser} />
+    return <SidebarUserButtonHybrid serverUser={user} />
   } catch (error) {
     console.error("Error in SidebarUserSuspense:", error);
     // Return a fallback UI when there's an error

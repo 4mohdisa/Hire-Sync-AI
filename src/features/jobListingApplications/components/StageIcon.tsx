@@ -1,6 +1,5 @@
 import { ApplicationStage } from "@/drizzle/schema"
 import {
-  CircleCheckIcon,
   CircleHelpIcon,
   CircleXIcon,
   HandshakeIcon,
@@ -20,14 +19,14 @@ function getIcon(stage: ApplicationStage) {
   switch (stage) {
     case "applied":
       return CircleHelpIcon
-    case "interested":
-      return CircleCheckIcon
-    case "denied":
-      return CircleXIcon
-    case "interviewed":
+    case "phone-screen":
       return SpeechIcon
-    case "hired":
+    case "interview":
+      return SpeechIcon
+    case "offer":
       return HandshakeIcon
+    case "rejected":
+      return CircleXIcon
     default:
       throw new Error(`Unknown application stage: ${stage satisfies never}`)
   }

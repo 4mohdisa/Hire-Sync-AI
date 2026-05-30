@@ -1,13 +1,13 @@
 'use client'
 
 import { Button } from "@/components/ui/button"
-import { supabase } from "../client"
+import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from "next/navigation"
 import { ComponentProps } from "react"
 import React from "react"
 
 export function SignUpButton({
-  children = <Button>Sign Up</Button>,
+  children,
   ...props
 }: ComponentProps<typeof Button>) {
   const router = useRouter()
@@ -18,13 +18,13 @@ export function SignUpButton({
   
   return (
     <Button onClick={handleSignUp} {...props}>
-      {children}
+      {children || "Sign Up"}
     </Button>
   )
 }
 
 export function SignInButton({
-  children = <Button>Sign In</Button>,
+  children,
   ...props
 }: ComponentProps<typeof Button>) {
   const router = useRouter()
@@ -35,39 +35,65 @@ export function SignInButton({
   
   return (
     <Button onClick={handleSignIn} {...props}>
-      {children}
+      {children || "Sign In"}
     </Button>
   )
 }
 
-interface SignOutButtonProps extends ComponentProps<typeof Button> {
+interface SignOutButtonProps {
   children?: React.ReactNode
+  asChild?: boolean
 }
 
 export function SignOutButton({
   children,
-  ...props
+  asChild = false // eslint-disable-line @typescript-eslint/no-unused-vars
 }: SignOutButtonProps) {
-  const router = useRouter()
-  
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔴 Starting sign out process...')
+      }
+      
+      // Create SSR-compatible Supabase client
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('❌ Sign out error:', error)
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Sign out successful, reloading page...')
+        }
+        // Force reload to clear all state
+        window.location.href = '/'
+      }
+    } catch (error) {
+      console.error('❌ Unexpected sign out error:', error)
+      // Still try to reload
+      window.location.href = '/'
+    }
   }
   
-  // If children is provided, render as-is with click handler
+  // If children is provided, clone it and add the onClick handler
   if (children) {
-    return (
-      <div onClick={handleSignOut} {...props}>
-        {children}
-      </div>
+    // Clone the children and add the onClick handler
+    return React.cloneElement(
+      children as React.ReactElement<{ onClick?: () => void }>, 
+      {
+        onClick: handleSignOut
+      }
     )
   }
   
   // Default button if no children
   return (
-    <Button onClick={handleSignOut} {...props}>
+    <Button onClick={handleSignOut}>
       Sign Out
     </Button>
   )

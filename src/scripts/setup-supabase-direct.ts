@@ -34,7 +34,6 @@ async function setupSupabaseDatabase() {
     console.log('• Database indexes for performance')
     console.log('• Auto-trigger for user profile creation')
     
-    console.log('\n🔍 Next steps:')
     console.log('1. Verify tables in your Supabase dashboard')
     console.log('2. Test user registration and authentication')
     console.log('3. Check RLS policies are working')

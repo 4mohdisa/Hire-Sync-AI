@@ -29,7 +29,7 @@ export async function requireUserProfile() {
 }
 
 // Simplified permission system without organizations
-export async function hasUserPermission(action: string): Promise<boolean> {
+export async function hasUserPermission(action: string): Promise<boolean> { // eslint-disable-line @typescript-eslint/no-unused-vars
   const { user } = await getCurrentUser()
   
   if (!user) {

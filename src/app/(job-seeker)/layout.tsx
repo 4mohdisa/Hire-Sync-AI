@@ -6,7 +6,6 @@ import {
   ClipboardListIcon,
   LayoutDashboard,
   LogInIcon,
-  BrainIcon,
 } from "lucide-react"
 import { ReactNode } from "react"
 
@@ -32,18 +31,13 @@ export default function JobSeekerLayout({
                 label: "AI Search",
               },
               {
-                href: "/ai-agent-demo",
-                icon: <BrainIcon />,
-                label: "AI Agent Demo",
-              },
-              {
                 href: "/employer",
                 icon: <LayoutDashboard />,
                 label: "Employer Dashboard",
                 authStatus: "signedIn",
               },
               {
-                href: "/sign-in",
+                href: "/auth/sign-in",
                 icon: <LogInIcon />,
                 label: "Sign In",
                 authStatus: "signedOut",

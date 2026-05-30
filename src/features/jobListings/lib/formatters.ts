@@ -95,18 +95,18 @@ export function formatWage(wage: number, wageInterval: WageInterval) {
 }
 
 export function formatJobListingLocation({
-  stateAbbreviation,
+  state_abbreviation,
   city,
 }: {
-  stateAbbreviation: string | null
+  state_abbreviation: string | null
   city: string | null
 }) {
-  if (stateAbbreviation == null && city == null) return "None"
+  if (state_abbreviation == null && city == null) return "None"
 
   const locationParts = []
   if (city != null) locationParts.push(city)
-  if (stateAbbreviation != null) {
-    locationParts.push(stateAbbreviation.toUpperCase())
+  if (state_abbreviation != null) {
+    locationParts.push(state_abbreviation.toUpperCase())
   }
 
   return locationParts.join(", ")

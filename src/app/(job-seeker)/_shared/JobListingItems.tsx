@@ -12,7 +12,6 @@ import {
   JobListingTable,
   jobListingTypes,
   locationRequirements,
-  UserTable,
 } from "@/drizzle/schema"
 import { convertSearchParamsToString } from "@/lib/convertSearchParamsToString"
 import { cn } from "@/lib/utils"
@@ -80,7 +79,7 @@ async function SuspendedComponent({ searchParams, params }: Props) {
         >
           <JobListingListItem
             jobListing={jobListing}
-            user={jobListing.user}
+            organization={jobListing.organization}
           />
         </Link>
       ))}
@@ -90,7 +89,7 @@ async function SuspendedComponent({ searchParams, params }: Props) {
 
 function JobListingListItem({
   jobListing,
-  user,
+  organization,
 }: {
   jobListing: Pick<
     typeof JobListingTable.$inferSelect,
@@ -105,13 +104,13 @@ function JobListingListItem({
     | "location_requirement" // Use snake_case to match schema
     | "is_featured" // Use snake_case to match schema
   >
-  user: Pick<typeof UserTable.$inferSelect, "name" | "image_url"> // Use snake_case to match schema
+  organization: { company_name: string; logo_url: string | null } | null
 }) {
-  const nameInitials = user?.name
+  const companyInitials = organization?.company_name
     ?.split(" ")
-    .splice(0, 4)
+    .splice(0, 3)
     .map(word => word[0])
-    .join("") || "U"
+    .join("") || "C"
 
   return (
     <Card
@@ -124,17 +123,17 @@ function JobListingListItem({
         <div className="flex gap-4">
           <Avatar className="size-14 @max-sm:hidden">
             <AvatarImage
-              src={user.image_url ?? undefined} // Use snake_case
-              alt={user.name || "User"}
+              src={organization?.logo_url ?? undefined} // Use snake_case
+              alt={organization?.company_name || "Company"}
             />
             <AvatarFallback className="uppercase bg-primary text-primary-foreground">
-              {nameInitials}
+              {companyInitials}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1">
             <CardTitle className="text-xl">{jobListing.title}</CardTitle>
             <CardDescription className="text-base">
-              Posted by {user.name || "Anonymous User"}
+              {organization?.company_name || "Company"}
             </CardDescription>
             {jobListing.posted_at != null && ( // Use snake_case
               <div className="text-sm font-medium text-primary @min-md:hidden">
@@ -193,7 +192,7 @@ async function getJobListings(
 
   if (searchParams.locationRequirement) {
     whereConditions.push(
-      eq(JobListingTable.locationRequirement, searchParams.locationRequirement)
+      eq(JobListingTable.location_requirement, searchParams.locationRequirement)
     )
   }
 
@@ -203,13 +202,13 @@ async function getJobListings(
 
   if (searchParams.state) {
     whereConditions.push(
-      eq(JobListingTable.stateAbbreviation, searchParams.state)
+      eq(JobListingTable.state_abbreviation, searchParams.state)
     )
   }
 
   if (searchParams.experience) {
     whereConditions.push(
-      eq(JobListingTable.experienceLevel, searchParams.experience)
+      eq(JobListingTable.experience_level, searchParams.experience)
     )
   }
 
@@ -237,19 +236,22 @@ async function getJobListings(
         and(eq(JobListingTable.status, "published"), ...whereConditions)
       ),
       with: {
-        user: {
+        organization: {
           columns: {
             id: true,
-            name: true,
-            image_url: true, // Use snake_case to match schema
+            company_name: true,
+            logo_url: true, // Use snake_case to match schema
           },
         },
       },
       orderBy: [desc(JobListingTable.is_featured), desc(JobListingTable.posted_at)] // Use snake_case,
     })
   } catch (error) {
-    console.log('RLS error accessing user data, falling back to job listings only:', error)
-    // Fallback: Query without user data if RLS prevents access
+    // RLS error accessing organization data, falling back to job listings only
+    if (process.env.NODE_ENV === 'development') {
+      console.log('RLS error accessing organization data, falling back to job listings only:', error)
+    }
+    // Fallback: Query without organization data if RLS prevents access
     data = await db.query.JobListingTable.findMany({
       where: or(
         jobListingId
@@ -263,13 +265,13 @@ async function getJobListings(
       orderBy: [desc(JobListingTable.is_featured), desc(JobListingTable.posted_at)] // Use snake_case,
     })
     
-    // Add placeholder user data
+    // Add placeholder organization data
     data = data.map(job => ({
       ...job,
-      user: {
-        id: job.user_id, // Use snake_case field name
-        name: "Anonymous User",
-        image_url: "" // Use snake_case to match schema
+      organization: {
+        id: job.organization_id, // Use snake_case field name
+        company_name: "Company",
+        logo_url: "" // Use snake_case to match schema
       }
     }))
   }

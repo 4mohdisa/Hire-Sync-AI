@@ -1,16 +1,23 @@
-import { createServerSupabaseClient, supabaseAdmin } from './server'
+import { createServerSupabaseClientForAuth, supabaseAdmin } from './server'
 import { User } from '@supabase/supabase-js'
 
 export async function getCurrentUser(): Promise<{
   userId: string | null
   user: User | null
 }> {
+  
   try {
-    const supabase = await createServerSupabaseClient() // Await the function call
+    // Use unified auth function for consistency
+    const supabase = await createServerSupabaseClientForAuth()
+    
     const { data: { user }, error } = await supabase.auth.getUser()
     
     // Handle specific Supabase auth errors gracefully
     if (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('getCurrentUser auth error:', error.message)
+      }
+      
       // These are expected errors for anonymous users
       if (error.message?.includes('session_missing') || 
           error.message?.includes('Auth session missing') ||
@@ -18,23 +25,30 @@ export async function getCurrentUser(): Promise<{
         return { userId: null, user: null }
       }
       
-      // Log unexpected errors
-      console.error('Unexpected auth error:', error)
       return { userId: null, user: null }
     }
     
-    return {
+    const result = {
       userId: user?.id || null,
       user
     }
-  } catch (error: any) {
+    
+    if (process.env.NODE_ENV === 'development' && user) {
+      console.log('✅ getCurrentUser success for:', user.email)
+    }
+    
+    return result
+  } catch (error: unknown) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('getCurrentUser error:', error)
+    }
+    
     // Handle thrown errors gracefully
-    if (error?.message?.includes('session_missing') || 
-        error?.message?.includes('Auth session missing')) {
+    if ((error instanceof Error && error.message?.includes('session_missing')) || 
+        (error instanceof Error && error.message?.includes('Auth session missing'))) {
       return { userId: null, user: null }
     }
     
-    console.error('Error in getCurrentUser:', error)
     return { userId: null, user: null }
   }
 }
@@ -53,14 +67,13 @@ export async function getUserById(id: string) {
   const { data, error } = await supabaseAdmin.auth.admin.getUserById(id)
   
   if (error) {
-    console.error('Error getting user by ID:', error)
     return null
   }
   
   return data.user
 }
 
-export async function createUser(email: string, password: string, metadata?: Record<string, any>) {
+export async function createUser(email: string, password: string, metadata?: Record<string, unknown>) {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
@@ -69,7 +82,6 @@ export async function createUser(email: string, password: string, metadata?: Rec
   })
   
   if (error) {
-    console.error('Error creating user:', error)
     throw error
   }
   

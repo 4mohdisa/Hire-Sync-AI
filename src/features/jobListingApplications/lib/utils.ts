@@ -9,8 +9,8 @@ export function sortApplicationsByStage(
 
 const APPLICATION_STAGE_SORT_ORDER: Record<ApplicationStage, number> = {
   applied: 0,
-  interested: 1,
-  interviewed: 2,
-  hired: 3,
-  denied: 4,
+  "phone-screen": 1,
+  interview: 2,
+  offer: 3,
+  rejected: 4,
 }

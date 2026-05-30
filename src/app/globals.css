@@ -50,39 +50,69 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.99 0 0);
+  
+  /* Base colors */
+  --background: oklch(1 0 0);
   --foreground: oklch(0.15 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.15 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.45 0.16 220);
+  
+  /* Primary green theme - matching homepage */
+  --primary: oklch(0.45 0.15 145);        /* green-600 equivalent */
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.96 0.01 240);
+  --primary-hover: oklch(0.42 0.15 145);  /* green-700 equivalent */
+  
+  /* Secondary colors */
+  --secondary: oklch(0.96 0.01 145);      /* green-50 equivalent */
   --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.95 0.01 240);
-  --muted-foreground: oklch(0.5 0 0);
-  --featured: oklch(0.65 0.18 45);
-  --featured-foreground: oklch(0.98 0 0);
-  --accent: oklch(0.94 0.02 240);
+  
+  /* Muted colors */
+  --muted: oklch(0.95 0.01 0);           /* gray-50 equivalent */
+  --muted-foreground: oklch(0.45 0 0);   /* gray-600 equivalent */
+  
+  /* Accent colors */
+  --accent: oklch(0.94 0.02 145);        /* green-100 equivalent */
   --accent-foreground: oklch(0.2 0 0);
-  --destructive: oklch(0.55 0.25 15);
-  --border: oklch(0.9 0.01 240);
-  --input: oklch(0.92 0.01 240);
-  --ring: oklch(0.45 0.16 220);
-  --chart-1: oklch(0.6 0.2 220);
-  --chart-2: oklch(0.55 0.15 180);
-  --chart-3: oklch(0.5 0.12 300);
-  --chart-4: oklch(0.65 0.18 45);
-  --chart-5: oklch(0.7 0.15 120);
-  --sidebar: oklch(0.97 0.01 240);
+  
+  /* Featured/highlight colors */
+  --featured: oklch(0.65 0.18 45);       /* orange accent for highlights */
+  --featured-foreground: oklch(0.98 0 0);
+  
+  /* Destructive colors */
+  --destructive: oklch(0.55 0.25 15);    /* red for errors */
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  /* Border and input colors */
+  --border: oklch(0.9 0.01 0);           /* gray-200 equivalent */
+  --input: oklch(0.92 0.01 0);           /* gray-100 equivalent */
+  --ring: oklch(0.45 0.15 145);          /* green-600 for focus rings */
+  
+  /* Chart colors - green theme variations */
+  --chart-1: oklch(0.45 0.15 145);       /* primary green */
+  --chart-2: oklch(0.55 0.12 180);       /* teal */
+  --chart-3: oklch(0.5 0.12 200);        /* blue */
+  --chart-4: oklch(0.65 0.18 45);        /* orange */
+  --chart-5: oklch(0.6 0.15 120);        /* lime */
+  
+  /* Sidebar colors - matching green theme */
+  --sidebar: oklch(0.97 0.01 145);       /* very light green */
   --sidebar-foreground: oklch(0.2 0 0);
-  --sidebar-primary: oklch(0.45 0.16 220);
+  --sidebar-primary: oklch(0.45 0.15 145);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.94 0.02 240);
+  --sidebar-accent: oklch(0.94 0.02 145);
   --sidebar-accent-foreground: oklch(0.2 0 0);
-  --sidebar-border: oklch(0.9 0.01 240);
-  --sidebar-ring: oklch(0.45 0.16 220);
+  --sidebar-border: oklch(0.9 0.01 145);
+  --sidebar-ring: oklch(0.45 0.15 145);
+  
+  /* Custom theme colors for consistency */
+  --success: oklch(0.45 0.15 145);       /* green for success states */
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.65 0.18 45);        /* orange for warnings */
+  --warning-foreground: oklch(0.98 0 0);
+  --info: oklch(0.5 0.12 200);           /* blue for info */
+  --info-foreground: oklch(0.98 0 0);
 }
 
 

@@ -10,6 +10,17 @@ export function getUserResumeIdTag(userId: string) {
 }
 
 export function revalidateUserResumeCache(userId: string) {
-  revalidateTag(getUserResumeGlobalTag())
-  revalidateTag(getUserResumeIdTag(userId))
+  const globalTag = getUserResumeGlobalTag()
+  const userTag = getUserResumeIdTag(userId)
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🗄️ Revalidating cache tags: ${globalTag}, ${userTag}`)
+  }
+  
+  revalidateTag(globalTag)
+  revalidateTag(userTag)
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('✅ Cache revalidation completed')
+  }
 }

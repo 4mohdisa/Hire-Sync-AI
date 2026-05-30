@@ -70,7 +70,7 @@ export function JobListingBadges({
       {(state_abbreviation != null || city != null) && (
         <Badge {...badgeProps}>
           <MapPinIcon className="size-10" />
-          {formatJobListingLocation({ stateAbbreviation: state_abbreviation, city })}
+          {formatJobListingLocation({ state_abbreviation, city })}
         </Badge>
       )}
       <Badge {...badgeProps}>

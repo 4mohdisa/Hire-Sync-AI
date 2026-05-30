@@ -8,7 +8,10 @@ export async function insertJobListingApplication(
 ) {
   await db.insert(JobListingApplicationTable).values(application)
 
-  revalidateJobListingApplicationCache(application)
+  revalidateJobListingApplicationCache({
+    userId: application.applicant_user_id,
+    jobListingId: application.job_listing_id
+  })
 }
 
 export async function updateJobListingApplication(
@@ -26,8 +29,8 @@ export async function updateJobListingApplication(
     .set(data)
     .where(
       and(
-        eq(JobListingApplicationTable.jobListingId, jobListingId),
-        eq(JobListingApplicationTable.userId, userId)
+        eq(JobListingApplicationTable.job_listing_id, jobListingId),
+        eq(JobListingApplicationTable.applicant_user_id, userId)
       )
     )
 

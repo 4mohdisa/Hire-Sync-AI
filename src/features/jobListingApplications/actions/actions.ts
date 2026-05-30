@@ -10,9 +10,11 @@ import {
 import { getJobListingIdTag } from "@/features/jobListings/db/cache/jobListings"
 import { getUserResumeIdTag } from "@/features/users/db/cache/userResumes"
 import {
-  getCurrentOrganization,
   getCurrentUser,
 } from "@/services/supabase/auth"
+import {
+  requireOrganizationAuth,
+} from "@/services/supabase/organization-auth"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { z } from "zod"
@@ -21,7 +23,7 @@ import {
   insertJobListingApplication,
   updateJobListingApplication,
 } from "../db/jobListingsApplications"
-import { hasOrgUserPermission } from "@/services/supabase/permissions"
+// Removed organization permission import as we use user-based permissions
 
 export async function createJobListingApplication(
   jobListingId: string,
@@ -50,8 +52,8 @@ export async function createJobListingApplication(
   }
 
   await insertJobListingApplication({
-    jobListingId,
-    userId,
+    job_listing_id: jobListingId,
+    applicant_user_id: userId,
     ...data,
   })
 
@@ -66,7 +68,7 @@ export async function createJobListingApplication(
 export async function updateJobListingApplicationStage(
   {
     jobListingId,
-    userId,
+    userId: applicantUserId,
   }: {
     jobListingId: string
     userId: string
@@ -84,21 +86,14 @@ export async function updateJobListingApplicationStage(
     }
   }
 
-  if (
-    !(await hasOrgUserPermission("org:job_listing_applications:change_stage"))
-  ) {
-    return {
-      error: true,
-      message: "You don't have permission to update the stage",
-    }
-  }
+  // Permission check handled by organization ownership verification below
 
-  const { orgId } = await getCurrentOrganization()
+  const { organizationId } = await requireOrganizationAuth()
   const jobListing = await getJobListing(jobListingId)
   if (
-    orgId == null ||
+    organizationId == null ||
     jobListing == null ||
-    orgId !== jobListing.organizationId
+    organizationId !== jobListing.organization_id
   ) {
     return {
       error: true,
@@ -109,7 +104,7 @@ export async function updateJobListingApplicationStage(
   await updateJobListingApplication(
     {
       jobListingId,
-      userId,
+      userId: applicantUserId,
     },
     { stage }
   )
@@ -118,7 +113,7 @@ export async function updateJobListingApplicationStage(
 export async function updateJobListingApplicationRating(
   {
     jobListingId,
-    userId,
+    userId: applicantUserId,
   }: {
     jobListingId: string
     userId: string
@@ -139,21 +134,14 @@ export async function updateJobListingApplicationRating(
     }
   }
 
-  if (
-    !(await hasOrgUserPermission("org:job_listing_applications:change_rating"))
-  ) {
-    return {
-      error: true,
-      message: "You don't have permission to update the rating",
-    }
-  }
+  // Permission check handled by organization ownership verification below
 
-  const { orgId } = await getCurrentOrganization()
+  const { organizationId } = await requireOrganizationAuth()
   const jobListing = await getJobListing(jobListingId)
   if (
-    orgId == null ||
+    organizationId == null ||
     jobListing == null ||
-    orgId !== jobListing.organizationId
+    organizationId !== jobListing.organization_id
   ) {
     return {
       error: true,
@@ -164,7 +152,7 @@ export async function updateJobListingApplicationRating(
   await updateJobListingApplication(
     {
       jobListingId,
-      userId,
+      userId: applicantUserId,
     },
     { rating }
   )
@@ -189,7 +177,7 @@ async function getJobListing(id: string) {
 
   return db.query.JobListingTable.findFirst({
     where: eq(JobListingTable.id, id),
-    columns: { organizationId: true },
+    columns: { organization_id: true },
   })
 }
 
@@ -198,7 +186,7 @@ async function getUserResume(userId: string) {
   cacheTag(getUserResumeIdTag(userId))
 
   return db.query.UserResumeTable.findFirst({
-    where: eq(UserResumeTable.userId, userId),
-    columns: { userId: true },
+    where: eq(UserResumeTable.user_id, userId),
+    columns: { user_id: true },
   })
 }

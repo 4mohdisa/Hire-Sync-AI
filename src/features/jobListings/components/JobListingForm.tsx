@@ -50,28 +50,38 @@ export function JobListingForm({
     typeof JobListingTable.$inferSelect,
     | "title"
     | "description"
-    | "experienceLevel"
+    | "experience_level"
     | "id"
-    | "stateAbbreviation"
+    | "state_abbreviation"
     | "type"
     | "wage"
-    | "wageInterval"
+    | "wage_interval"
     | "city"
-    | "locationRequirement"
+    | "location_requirement"
   >
 }) {
   const form = useForm({
     resolver: zodResolver(jobListingSchema),
-    defaultValues: jobListing ?? {
+    defaultValues: jobListing ? {
+      title: jobListing.title,
+      description: jobListing.description,
+      stateAbbreviation: jobListing.state_abbreviation,
+      city: jobListing.city,
+      wage: jobListing.wage,
+      wageInterval: jobListing.wage_interval,
+      experienceLevel: jobListing.experience_level,
+      type: jobListing.type,
+      locationRequirement: jobListing.location_requirement,
+    } : {
       title: "",
       description: "",
       stateAbbreviation: null,
       city: null,
       wage: null,
-      wageInterval: "yearly",
-      experienceLevel: "junior",
-      type: "full-time",
-      locationRequirement: "in-office",
+      wageInterval: "yearly" as const,
+      experienceLevel: "junior" as const,
+      type: "full-time" as const,
+      locationRequirement: "in-office" as const,
     },
   })
 

@@ -1,130 +1,75 @@
-'use client'
+import { getCurrentUser } from '@/services/supabase/auth'
+import { createServerSupabaseClientForAuth } from '@/services/supabase/server'
+import Link from 'next/link'
 
-import { useSupabase } from "@/services/supabase/components/SupabaseProvider"
-import { supabase } from "@/services/supabase/client"
-import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-
-export default function DebugAuthPage() {
-  const { user, session, loading } = useSupabase()
-  const router = useRouter()
-  const [isSigningOut, setIsSigningOut] = useState(false)
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true)
-    try {
-      // Clear the session completely
-      await supabase.auth.signOut({ scope: 'global' })
-      
-      // Clear all browser storage
-      localStorage.clear()
-      sessionStorage.clear()
-      
-      // Clear any Supabase-specific storage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('supabase.auth.token') || key.startsWith('sb-')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      // Clear cookies by setting them to expire
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
-      
-      // Force page refresh to clear any cached state
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 500)
-    } catch (error) {
-      console.error('Sign out error:', error)
-      setIsSigningOut(false)
-    }
-  }
-
-  const goToSignIn = () => {
-    router.push('/auth/sign-in')
-  }
-
-  const handleDeleteAccount = async () => {
-    if (!user || !confirm('Are you sure you want to delete this account? This cannot be undone.')) {
-      return
-    }
+export default async function DebugAuth() {
+  let authState = 'Unknown'
+  let user = null
+  let session = null
+  let error = null
+  
+  try {
+    const supabase = await createServerSupabaseClientForAuth()
+    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+    const { user: currentUser } = await getCurrentUser()
     
-    try {
-      // Note: Deleting user from Supabase requires admin privileges
-      // For now, just sign out - we'll implement admin deletion if needed
-      alert('Account deletion requires admin access. For now, signing out...')
-      await handleSignOut()
-    } catch (error) {
-      console.error('Delete account error:', error)
+    session = currentSession
+    user = currentUser
+    error = sessionError
+    
+    if (currentUser && currentSession) {
+      authState = 'Authenticated'
+    } else if (currentSession && !currentUser) {
+      authState = 'Session exists, but no user data'
+    } else {
+      authState = 'Not authenticated'
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-        </div>
-      </div>
-    )
+  } catch (err) {
+    error = err
+    authState = 'Error occurred'
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Authentication Debug</h1>
+    <div className="p-8 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Authentication Debug</h1>
+      
+      <div className="space-y-6">
+        <div className="bg-gray-100 p-4 rounded">
+          <h2 className="font-semibold mb-2">Auth State: {authState}</h2>
+        </div>
         
-        <div className="space-y-4">
-          <div className="p-4 bg-gray-100 rounded">
-            <h2 className="font-semibold mb-2">Current Status:</h2>
-            <p><strong>User:</strong> {user ? user.email : 'Not signed in'}</p>
-            <p><strong>Session:</strong> {session ? 'Active' : 'None'}</p>
-            <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
+        <div className="bg-blue-50 p-4 rounded">
+          <h3 className="font-semibold mb-2">Session Info:</h3>
+          <pre className="text-xs overflow-auto">
+            {session ? JSON.stringify(session, null, 2) : 'No session'}
+          </pre>
+        </div>
+        
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="font-semibold mb-2">User Info:</h3>
+          <pre className="text-xs overflow-auto">
+            {user ? JSON.stringify(user, null, 2) : 'No user'}
+          </pre>
+        </div>
+        
+        {error ? (
+          <div className="bg-red-50 p-4 rounded">
+            <h3 className="font-semibold mb-2 text-red-700">Error:</h3>
+            <pre className="text-xs overflow-auto text-red-600">
+              {JSON.stringify(error, null, 2)}
+            </pre>
           </div>
-
-          {user ? (
-            <div className="space-y-2">
-              <p className="text-sm text-red-600">
-                You are signed in as <strong>{user.email}</strong>. This is why you're being redirected away from auth pages.
-              </p>
-              <Button 
-                onClick={handleSignOut} 
-                className="w-full" 
-                variant="destructive"
-                disabled={isSigningOut}
-              >
-                {isSigningOut ? 'Signing Out...' : 'Sign Out & Clear Session'}
-              </Button>
-              <Button 
-                onClick={handleDeleteAccount} 
-                className="w-full" 
-                variant="outline"
-                size="sm"
-              >
-                Delete Account (if needed)
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-sm text-green-600">
-                No active session. You should be able to access auth pages.
-              </p>
-              <Button onClick={goToSignIn} className="w-full">
-                Go to Sign In Page
-              </Button>
-            </div>
-          )}
-          
-          <Button 
-            onClick={() => router.push('/')} 
-            variant="outline" 
-            className="w-full"
-          >
-            Back to Home
-          </Button>
+        ) : null}
+        
+        <div className="bg-yellow-50 p-4 rounded">
+          <h3 className="font-semibold mb-2">Troubleshooting Steps:</h3>
+          <ol className="list-decimal list-inside space-y-1 text-sm">
+            <li>Clear browser cache and cookies for localhost</li>
+            <li>Try signing out: <a href="/auth/sign-out" className="text-blue-600 underline">Sign Out</a></li>
+            <li>Try signing in: <a href="/auth/sign-in" className="text-blue-600 underline">Sign In</a></li>
+            <li>Visit settings: <a href="/user-settings/profile" className="text-blue-600 underline">Settings</a></li>
+            <li>Go back to home: <Link href="/" className="text-blue-600 underline">Home</Link></li>
+          </ol>
         </div>
       </div>
     </div>

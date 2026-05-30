@@ -30,7 +30,7 @@ async function setupSupabaseDatabase() {
     console.log('🚀 Setting up Supabase database manually...')
 
     // Test connection first by trying to access a system table
-    const { data: testData, error: testError } = await supabase.rpc('version')
+    const { error: testError } = await supabase.rpc('version')
 
     if (testError) {
       console.error('❌ Connection test failed:', testError.message)
@@ -47,7 +47,6 @@ async function setupSupabaseDatabase() {
     console.log('\n3. Copy and paste the contents of: src/drizzle/migrate-to-supabase.sql')
     console.log('\n4. Execute the SQL script')
     
-    console.log('\n🔍 Alternative: Use database connection')
     console.log('If you need the database password:')
     console.log('- Go to Settings → Database in your Supabase dashboard')
     console.log('- Find or reset your database password')
@@ -55,7 +54,6 @@ async function setupSupabaseDatabase() {
     console.log('- Run: npm run db:setup-supabase-direct')
 
     // Try to check if tables already exist
-    console.log('\n🔍 Checking existing tables...')
     
     const tableChecks = [
       'users',
@@ -66,7 +64,7 @@ async function setupSupabaseDatabase() {
     ]
 
     for (const tableName of tableChecks) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from(tableName)
         .select('*')
         .limit(1)
@@ -82,8 +80,8 @@ async function setupSupabaseDatabase() {
       }
     }
 
-  } catch (error: any) {
-    console.error('❌ Error:', error.message || error)
+  } catch (error: unknown) {
+    console.error('❌ Error:', error instanceof Error ? error.message : String(error))
     process.exit(1)
   }
 }

@@ -3,7 +3,7 @@ import { db } from "@/drizzle/db"
 import { JobListingTable } from "@/drizzle/schema"
 import { JobListingForm } from "@/features/jobListings/components/JobListingForm"
 import { getJobListingIdTag } from "@/features/jobListings/db/cache/jobListings"
-import { getCurrentUser } from "@/services/supabase/auth"
+import { requireOrganizationAuth } from "@/services/supabase/organization-auth"
 import { and, eq } from "drizzle-orm"
 import { cacheTag } from "next/dist/server/use-cache/cache-tag"
 import { notFound } from "next/navigation"
@@ -30,23 +30,33 @@ export default function EditJobListingPage(props: Props) {
 
 async function SuspendedPage({ params }: Props) {
   const { jobListingId } = await params
-  const { userId } = await getCurrentUser()
-  if (userId == null) return notFound()
+  const { organizationId } = await requireOrganizationAuth()
 
-  const jobListing = await getJobListing(jobListingId, userId)
+  const jobListing = await getJobListing(jobListingId, organizationId)
   if (jobListing == null) return notFound()
 
   return <JobListingForm jobListing={jobListing} />
 }
 
-async function getJobListing(id: string, userId: string) {
+async function getJobListing(id: string, organizationId: string) {
   "use cache"
   cacheTag(getJobListingIdTag(id))
 
-  return db.query.JobListingTable.findFirst({
+  const result = await db.query.JobListingTable.findFirst({
     where: and(
       eq(JobListingTable.id, id),
-      eq(JobListingTable.user_id, userId)
+      eq(JobListingTable.organization_id, organizationId)
     ),
   })
+
+  if (!result) return null
+
+  // Transform snake_case to camelCase to match form expectations
+  return {
+    ...result,
+    experienceLevel: result.experience_level,
+    stateAbbreviation: result.state_abbreviation,
+    wageInterval: result.wage_interval,
+    locationRequirement: result.location_requirement,
+  }
 }

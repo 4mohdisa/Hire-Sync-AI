@@ -2,7 +2,7 @@ import { getCurrentUser } from './auth'
 
 // Simplified permission system without organizations
 // All authenticated users have all permissions for now
-const ALL_PERMISSIONS = [
+type ALL_PERMISSIONS = [
   'org:job_listings:create',
   'org:job_listings:read',
   'org:job_listings:update',
@@ -11,11 +11,11 @@ const ALL_PERMISSIONS = [
   'org:job_listing_applications:read',
   'org:job_listing_applications:change_rating',
   'org:job_listing_applications:change_stage',
-] as const
+]
 
-export type Permission = typeof ALL_PERMISSIONS[number]
+export type Permission = ALL_PERMISSIONS[number]
 
-export async function hasOrgUserPermission(permission: Permission): Promise<boolean> {
+export async function hasOrgUserPermission(permission: Permission): Promise<boolean> { // eslint-disable-line @typescript-eslint/no-unused-vars
   const { user } = await getCurrentUser()
   
   if (!user) {

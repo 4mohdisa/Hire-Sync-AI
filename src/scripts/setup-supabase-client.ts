@@ -65,8 +65,8 @@ async function setupSupabaseDatabase() {
         } else {
           console.log(`✅ Statement ${i + 1} executed successfully`)
         }
-      } catch (err: any) {
-        console.error(`❌ Exception in statement ${i + 1}:`, err.message)
+      } catch (err: unknown) {
+        console.error(`❌ Exception in statement ${i + 1}:`, err instanceof Error ? err.message : String(err))
         // Continue with other statements
       }
     }
@@ -82,13 +82,12 @@ async function setupSupabaseDatabase() {
     console.log('• Database indexes for performance')
     console.log('• Auto-trigger for user profile creation')
     
-    console.log('\n🔍 Next steps:')
     console.log('1. Verify tables in your Supabase dashboard')
     console.log('2. Test user registration flow')
     console.log('3. Check RLS policies are working')
 
-  } catch (error: any) {
-    console.error('❌ Error setting up database:', error.message || error)
+  } catch (error: unknown) {
+    console.error('❌ Error setting up database:', error instanceof Error ? error.message : String(error))
     process.exit(1)
   }
 }

@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
         get(name: string) {
           return req.cookies.get(name)?.value
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options: Record<string, unknown>) {
           req.cookies.set({ name, value, ...options })
           res = NextResponse.next({
             request: {
@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
           })
           res.cookies.set({ name, value, ...options })
         },
-        remove(name: string, options: any) {
+        remove(name: string, options: Record<string, unknown>) {
           req.cookies.set({ name, value: '', ...options })
           res = NextResponse.next({
             request: {
@@ -43,12 +43,10 @@ export async function middleware(req: NextRequest) {
   // Get user session
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Debug logging
-  console.log('Middleware Debug:', {
-    pathname: req.nextUrl.pathname,
-    hasUser: !!user,
-    userEmail: user?.email || 'none'
-  })
+  // Debug: Log user session status
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔍 Middleware - Path: ${req.nextUrl.pathname}, User: ${user ? user.email : 'none'}`)
+  }
 
   // Public routes that don't require authentication
   const publicRoutes = [
@@ -71,15 +69,30 @@ export async function middleware(req: NextRequest) {
     req.nextUrl.pathname.startsWith(route + '/')
   )
 
-  // If route requires auth and user is not authenticated, redirect to sign-in
+  // Check for client-side auth indicators in cookies
+  const hasAuthCookies = req.cookies.getAll().some(cookie => 
+    cookie.name.includes('supabase') || 
+    cookie.name.includes('auth-token') ||
+    cookie.name.includes('refresh')
+  )
+  
+  // Also check for our custom auth cookie
+  const hasCustomAuthCookie = !!req.cookies.get('supabase-auth-token')?.value
+
+
+  // If route requires auth and user is not authenticated, check for auth cookies
   if (!isPublicRoute && !user) {
-    console.log('Redirecting to sign-in: no user for protected route')
+    // If we have auth-related cookies, allow the request to proceed
+    // The client-side will handle the authentication state
+    if (hasAuthCookies || hasCustomAuthCookie) {
+      return res
+    }
+    
     return NextResponse.redirect(new URL('/auth/sign-in', req.url))
   }
 
   // If user is authenticated and trying to access auth pages, redirect to home
   if (user && (req.nextUrl.pathname.startsWith('/auth/') || req.nextUrl.pathname.startsWith('/sign-in') || req.nextUrl.pathname.startsWith('/sign-up'))) {
-    console.log('Redirecting authenticated user away from auth pages')
     return NextResponse.redirect(new URL('/', req.url))
   }
 

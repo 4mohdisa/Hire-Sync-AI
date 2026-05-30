@@ -23,12 +23,12 @@ type JobListing = Pick<
   | "id"
   | "title"
   | "city"
-  | "stateAbbreviation"
+  | "state_abbreviation"
   | "type"
-  | "experienceLevel"
+  | "experience_level"
   | "wage"
-  | "wageInterval"
-  | "locationRequirement"
+  | "wage_interval"
+  | "location_requirement"
 > & {
   organizationName: string
 }
@@ -92,17 +92,17 @@ export default function DailyJobListingEmail({
 
 function getBadges(jobListing: JobListing) {
   const badges = [
-    formatLocationRequirement(jobListing.locationRequirement),
+    formatLocationRequirement(jobListing.location_requirement),
     formatJobType(jobListing.type),
-    formatExperienceLevel(jobListing.experienceLevel),
+    formatExperienceLevel(jobListing.experience_level),
   ]
 
-  if (jobListing.city != null || jobListing.stateAbbreviation != null) {
+  if (jobListing.city != null || jobListing.state_abbreviation != null) {
     badges.unshift(formatJobListingLocation(jobListing))
   }
 
-  if (jobListing.wage != null && jobListing.wageInterval != null) {
-    badges.unshift(formatWage(jobListing.wage, jobListing.wageInterval))
+  if (jobListing.wage != null && jobListing.wage_interval != null) {
+    badges.unshift(formatWage(jobListing.wage, jobListing.wage_interval))
   }
 
   return badges
@@ -112,27 +112,27 @@ DailyJobListingEmail.PreviewProps = {
   jobListings: [
     {
       city: "Omaha",
-      stateAbbreviation: "NE",
+      state_abbreviation: "NE",
       title: "Frontend Developer",
       wage: null,
-      wageInterval: null,
-      experienceLevel: "senior",
+      wage_interval: null,
+      experience_level: "senior",
       type: "part-time",
       id: crypto.randomUUID(),
       organizationName: "IsaxCode",
-      locationRequirement: "in-office",
+      location_requirement: "in-office",
     },
     {
       city: null,
-      stateAbbreviation: null,
+      state_abbreviation: null,
       title: "Software Engineer",
       wage: 100000,
-      wageInterval: "yearly",
-      experienceLevel: "mid-level",
+      wage_interval: "yearly",
+      experience_level: "mid-level",
       type: "full-time",
       id: crypto.randomUUID(),
       organizationName: "Google",
-      locationRequirement: "remote",
+      location_requirement: "remote",
     },
   ],
   userName: "John Doe",

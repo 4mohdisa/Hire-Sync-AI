@@ -9,8 +9,8 @@ import {
   index,
   uuid,
 } from "drizzle-orm/pg-core"
-import { UserTable } from "./user"
 import { relations } from "drizzle-orm"
+import { OrganizationTable } from "./organization"
 import { JobListingApplicationTable } from "./jobListingApplication"
 
 export const wageIntervals = ["hourly", "yearly"] as const
@@ -49,8 +49,8 @@ export const JobListingTable = pgTable(
   "job_listings",
   {
     id: uuid().primaryKey().defaultRandom(),
-    user_id: uuid("user_id") // Use snake_case to match Supabase conventions
-      .references(() => UserTable.id, { onDelete: "cascade" })
+    organization_id: uuid("organization_id") // Organization that posted this job
+      .references(() => OrganizationTable.id, { onDelete: "cascade" })
       .notNull(),
     title: varchar().notNull(),
     description: text().notNull(),
@@ -73,9 +73,9 @@ export const JobListingTable = pgTable(
 export const jobListingReferences = relations(
   JobListingTable,
   ({ one, many }) => ({
-    user: one(UserTable, { // Changed from organization to user
-      fields: [JobListingTable.user_id],
-      references: [UserTable.id],
+    organization: one(OrganizationTable, {
+      fields: [JobListingTable.organization_id],
+      references: [OrganizationTable.id],
     }),
     applications: many(JobListingApplicationTable),
   })

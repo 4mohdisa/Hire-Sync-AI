@@ -10,10 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useState } from 'react'
-import { PlayIcon, PauseIcon, SettingsIcon, BrainIcon, TargetIcon, ClockIcon } from 'lucide-react'
+import { PlayIcon, PauseIcon, SettingsIcon, BrainIcon, TargetIcon, ClockIcon, ZapIcon, CheckCircleIcon } from 'lucide-react'
 
 export function AIAgentForm() {
   const [isAgentActive, setIsAgentActive] = useState(false)
+  const [isDemoRunning, setIsDemoRunning] = useState(false)
+  const [appliedJobs, setAppliedJobs] = useState<string[]>([])
   const [preferences, setPreferences] = useState({
     jobTitles: "Software Engineer, Full Stack Developer, Frontend Developer",
     locations: "Remote, San Francisco, New York",
@@ -34,13 +36,38 @@ export function AIAgentForm() {
   })
 
   const [questions, setQuestions] = useState({
-    whyInterested: "I'm passionate about building innovative software solutions that make a positive impact. I'm particularly drawn to companies that value creativity, collaboration, and continuous learning.",
+    whyInterested: "I&apos;m passionate about building innovative software solutions that make a positive impact. I&apos;m particularly drawn to companies that value creativity, collaboration, and continuous learning.",
     greatestStrength: "My ability to quickly learn new technologies and adapt to different tech stacks while maintaining high code quality and attention to detail.",
     careerGoals: "To grow as a full-stack developer while contributing to meaningful projects that solve real-world problems. I&apos;m interested in both technical leadership and mentoring opportunities.",
     workStyle: "I thrive in collaborative environments where I can both contribute ideas and learn from experienced team members. I prefer clear communication and regular feedback.",
-    availability: "I'm available to start immediately and can commit to full-time employment.",
-    relocate: "I'm open to relocation for the right opportunity, especially to tech hubs like San Francisco, Seattle, or Austin."
+    availability: "I&apos;m available to start immediately and can commit to full-time employment.",
+    relocate: "I&apos;m open to relocation for the right opportunity, especially to tech hubs like San Francisco, Seattle, or Austin."
   })
+
+  const demoJobs = [
+    "Software Engineer Internship Opportunities at Microsoft",
+    "Frontend Developer - React at Microsoft", 
+    "Data Scientist - AI/ML at Microsoft",
+    "Cloud Solutions Architect at Microsoft",
+    "Product Manager - Office 365 at Microsoft",
+    "DevOps Engineer - Azure at Microsoft"
+  ]
+
+  const runBulkApplicationDemo = async () => {
+    setIsDemoRunning(true)
+    setAppliedJobs([])
+    
+    // Simulate applying to each job with delays
+    for (let i = 0; i < demoJobs.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 800)) // 800ms delay between applications
+      setAppliedJobs(prev => [...prev, demoJobs[i]])
+    }
+    
+    // Stop demo after 2 seconds
+    setTimeout(() => {
+      setIsDemoRunning(false)
+    }, 2000)
+  }
 
   const handleSave = () => {
     // Since we don't have auth requirements, just show success message
@@ -77,6 +104,72 @@ export function AIAgentForm() {
             </>
           )}
         </Button>
+      </div>
+
+      {/* Demo Section */}
+      <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-lg">🚀 Bulk Application Demo</h3>
+            <p className="text-sm text-muted-foreground">
+              Watch the AI agent apply to multiple jobs automatically
+            </p>
+          </div>
+          <Button 
+            onClick={runBulkApplicationDemo}
+            disabled={isDemoRunning}
+            variant="default"
+            size="lg"
+            className="min-w-[140px]"
+          >
+            {isDemoRunning ? (
+              <>
+                <div className="animate-spin w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
+                Applying...
+              </>
+            ) : (
+              <>
+                <ZapIcon className="w-4 h-4 mr-2" />
+                Apply to All Jobs
+              </>
+            )}
+          </Button>
+        </div>
+        
+        {(isDemoRunning || appliedJobs.length > 0) && (
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-700">
+              Applications Progress: {appliedJobs.length}/{demoJobs.length}
+            </div>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {appliedJobs.map((job, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center gap-2 p-2 bg-white rounded border animate-in fade-in slide-in-from-left duration-500"
+                >
+                  <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm">Applied to: {job}</span>
+                  <Badge variant="secondary" className="ml-auto">
+                    Applied
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            {!isDemoRunning && appliedJobs.length === demoJobs.length && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                <div className="flex items-center gap-2">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    Successfully applied to {appliedJobs.length} jobs! 🎉
+                  </span>
+                </div>
+                <p className="text-sm text-green-700 mt-1">
+                  Your applications have been submitted and you&apos;ll receive notifications for any responses.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quick Stats */}
@@ -123,7 +216,7 @@ export function AIAgentForm() {
             Job Preferences
           </CardTitle>
           <CardDescription>
-            Define what types of jobs you're looking for
+            Define what types of jobs you&apos;re looking for
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

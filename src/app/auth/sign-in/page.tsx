@@ -2,13 +2,21 @@
 
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { supabase } from '@/services/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 import { useEffect, useState } from 'react'
+import { BrainCircuit } from 'lucide-react'
+import Link from 'next/link'
 import { useSupabase } from '@/services/supabase/components/SupabaseProvider'
 
 export default function SignInPage() {
   const { user } = useSupabase()
   const [mounted, setMounted] = useState(false)
+
+  // Create SSR-compatible Supabase client
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   useEffect(() => {
     setMounted(true)
@@ -31,22 +39,22 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <img
-            className="mx-auto h-16 w-auto"
-            src="/logo.png"
-            alt="HireSync"
-          />
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-muted py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <div className="flex justify-center">
+            <BrainCircuit className="h-12 w-12 text-primary" />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Sign in to your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Welcome back to HireSync AI
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Welcome back to{' '}
+            <span className="font-medium text-primary">Hire-Sync AI</span>
           </p>
         </div>
-        <div className="bg-white py-8 px-6 shadow rounded-lg">
+        
+        <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-border">
           <Auth
             supabaseClient={supabase}
             view="sign_in"
@@ -55,31 +63,27 @@ export default function SignInPage() {
               variables: {
                 default: {
                   colors: {
-                    brand: '#2563eb',
-                    brandAccent: '#1d4ed8',
-                    borderColorStronger: '#e5e7eb',
-                    inputBackground: 'white',
-                    inputBorder: '#d1d5db',
-                    inputBorderFocus: '#2563eb',
-                    inputBorderHover: '#9ca3af'
+                    brand: 'hsl(var(--primary))',
+                    brandAccent: 'hsl(var(--primary))',
                   },
-                  borderWidths: {
-                    buttonBorderWidth: '1px',
-                    inputBorderWidth: '1px'
-                  },
-                  radii: {
-                    borderRadiusButton: '6px',
-                    buttonBorderRadius: '6px',
-                    inputBorderRadius: '6px'
-                  }
-                }
-              }
+                },
+              },
             }}
-            providers={[]} // No third-party providers, email/password only
-            options={{
-              emailRedirectTo: undefined,
-            }}
+            providers={['google', 'github']}
+            redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`}
           />
+        </div>
+        
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link 
+              href="/auth/sign-up" 
+              className="font-medium text-primary hover:text-primary/80"
+            >
+              Sign up here
+            </Link>
+          </p>
         </div>
       </div>
     </div>

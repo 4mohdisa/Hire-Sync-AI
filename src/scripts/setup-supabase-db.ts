@@ -9,8 +9,8 @@ async function setupSupabaseDatabase() {
     
     // Create admin client for database operations
     const supabaseAdmin = createClient(
-      env.PROJECT_URL,
-      env.SERVICE_ROLE_KEY,
+      env.SUPABASE_URL || env.PROJECT_URL || "http://localhost:3000",
+      env.SERVICE_ROLE_KEY!,
       {
         auth: {
           autoRefreshToken: false,
@@ -45,7 +45,7 @@ async function setupSupabaseDatabase() {
       console.log(`⚡ Executing statement ${i + 1}/${statements.length}`)
       
       try {
-        const { data, error } = await supabaseAdmin.rpc('exec_sql', {
+        const { error } = await supabaseAdmin.rpc('exec_sql', {
           sql: statement
         })
         

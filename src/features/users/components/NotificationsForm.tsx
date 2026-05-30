@@ -12,10 +12,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import { LoadingSwap } from "@/components/LoadingSwap"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -26,14 +24,14 @@ export function NotificationsForm({
 }: {
   notificationSettings?: Pick<
     typeof UserNotificationSettingsTable.$inferSelect,
-    "newJobEmailNotifications" | "aiPrompt"
+    "new_job_alerts" | "email_notifications"
   >
 }) {
   const form = useForm({
     resolver: zodResolver(userNotificationSettingsSchema),
     defaultValues: notificationSettings ?? {
-      aiPrompt: "",
-      newJobEmailNotifications: false,
+      email_notifications: true,
+      new_job_alerts: false,
     },
   })
 
@@ -49,14 +47,13 @@ export function NotificationsForm({
     }
   }
 
-  const newJobEmailNotifications = form.watch("newJobEmailNotifications")
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="border rounded-lg p-4 shadow-sm space-y-6">
           <FormField
-            name="newJobEmailNotifications"
+            name="new_job_alerts"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -78,37 +75,28 @@ export function NotificationsForm({
               </FormItem>
             )}
           />
-          {newJobEmailNotifications && (
-            <FormField
-              name="aiPrompt"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
+          <FormField
+            name="email_notifications"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <FormLabel>Filter Prompt</FormLabel>
+                    <FormLabel>General Email Notifications</FormLabel>
                     <FormDescription>
-                      Our AI will use this prompt to filter job listings and
-                      only send you notifications for jobs that match your
-                      criteria.
+                      Receive general email notifications from the platform
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Textarea
-                      {...field}
-                      value={field.value ?? ""}
-                      className="min-h-32"
-                      placeholder="Describe the jobs you're interested in. For example: 'I'm looking for remote frontend development positions that use React and pay at least $100k per year.'"
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Leave blank to receive notifications of all new job
-                    listings.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+                </div>
+              </FormItem>
+            )}
+          />
         </div>
         <Button
           type="submit"

@@ -15,7 +15,6 @@ import {
   ChevronsUpDown,
   LogOutIcon,
   SettingsIcon,
-  UserIcon,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -26,7 +25,7 @@ type User = {
 }
 
 export function SidebarUserButtonClient({ user }: { user: User }) {
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { isMobile } = useSidebar()
 
   return (
     <DropdownMenu>
@@ -51,17 +50,12 @@ export function SidebarUserButtonClient({ user }: { user: User }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/user-settings/profile">
-            <UserIcon className="mr-1" /> Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/user-settings/notifications">
             <SettingsIcon className="mr-1" /> Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <SignOutButton>
-          <DropdownMenuItem>
+        <SignOutButton asChild>
+          <DropdownMenuItem className="cursor-pointer">
             <LogOutIcon className="mr-1" /> Log Out
           </DropdownMenuItem>
         </SignOutButton>

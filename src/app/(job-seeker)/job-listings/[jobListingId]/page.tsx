@@ -108,11 +108,11 @@ async function JobListingDetails({
   const jobListing = await getJobListing(jobListingId)
   if (jobListing == null) return notFound()
 
-  const nameInitials = jobListing.organization.name
-    .split(" ")
+  const nameInitials = jobListing.organization?.company_name
+    ?.split(" ")
     .splice(0, 4)
     .map(word => word[0])
-    .join("")
+    .join("") || "C"
 
   return (
     <div className="space-y-6 @container">
@@ -120,8 +120,8 @@ async function JobListingDetails({
         <div className="flex gap-4 items-start">
           <Avatar className="size-14 @max-md:hidden">
             <AvatarImage
-              src={jobListing.organization.imageUrl ?? undefined}
-              alt={jobListing.organization.name}
+              src={jobListing.organization?.logo_url ?? undefined}
+              alt={jobListing.organization?.company_name || "Company"}
             />
             <AvatarFallback className="uppercase bg-primary text-primary-foreground">
               {nameInitials}
@@ -132,18 +132,18 @@ async function JobListingDetails({
               {jobListing.title}
             </h1>
             <div className="text-base text-muted-foreground">
-              {jobListing.organization.name}
+              {jobListing.organization?.company_name || "Anonymous Company"}
             </div>
-            {jobListing.postedAt != null && (
+            {jobListing.posted_at != null && (
               <div className="text-sm text-muted-foreground @min-lg:hidden">
-                {jobListing.postedAt.toLocaleDateString()}
+                {jobListing.posted_at.toLocaleDateString()}
               </div>
             )}
           </div>
           <div className="ml-auto flex items-center gap-4">
-            {jobListing.postedAt != null && (
+            {jobListing.posted_at != null && (
               <div className="text-sm text-muted-foreground @max-lg:hidden">
-                {jobListing.postedAt.toLocaleDateString()}
+                {jobListing.posted_at.toLocaleDateString()}
               </div>
             )}
             <Button size="icon" variant="outline" asChild>
@@ -197,7 +197,7 @@ async function ApplyButton({ jobListingId }: { jobListingId: string }) {
     })
 
     await connection()
-    const difference = differenceInDays(application.createdAt, new Date())
+    const difference = differenceInDays(application.created_at, new Date())
 
     return (
       <div className="text-muted-foreground text-sm">
@@ -250,7 +250,7 @@ async function getUserResume(userId: string) {
   cacheTag(getUserResumeIdTag(userId))
 
   return db.query.UserResumeTable.findFirst({
-    where: eq(UserResumeTable.userId, userId),
+    where: eq(UserResumeTable.user_id, userId),
   })
 }
 
@@ -266,8 +266,8 @@ async function getJobListingApplication({
 
   return db.query.JobListingApplicationTable.findFirst({
     where: and(
-      eq(JobListingApplicationTable.jobListingId, jobListingId),
-      eq(JobListingApplicationTable.userId, userId)
+      eq(JobListingApplicationTable.job_listing_id, jobListingId),
+      eq(JobListingApplicationTable.applicant_user_id, userId)
     ),
   })
 }
@@ -285,8 +285,8 @@ async function getJobListing(id: string) {
       organization: {
         columns: {
           id: true,
-          name: true,
-          imageUrl: true,
+          company_name: true,
+          logo_url: true,
         },
       },
     },

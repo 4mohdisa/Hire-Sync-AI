@@ -45,12 +45,16 @@ import { DataTableFacetedFilter } from "@/components/dataTable/DataTableFacetedF
 
 type Application = Pick<
   typeof JobListingApplicationTable.$inferSelect,
-  "createdAt" | "stage" | "rating" | "jobListingId"
+  "created_at" | "stage" | "rating" | "job_listing_id"
 > & {
+  createdAt: Date
+  jobListingId: string
   coverLetterMarkdown: ReactNode | null
-  user: Pick<typeof UserTable.$inferSelect, "id" | "name" | "imageUrl"> & {
+  user: Pick<typeof UserTable.$inferSelect, "id" | "name" | "image_url"> & {
+    imageUrl: string | null
     resume:
-      | (Pick<typeof UserResumeTable.$inferSelect, "resumeFileUrl"> & {
+      | (Pick<typeof UserResumeTable.$inferSelect, "url"> & {
+          resumeFileUrl: string
           markdownSummary: ReactNode | null
         })
       | null
@@ -68,7 +72,7 @@ function getColumns(
       cell: ({ row }) => {
         const user = row.original.user
 
-        const nameInitials = user.name
+        const nameInitials = (user.name || "")
           .split(" ")
           .slice(0, 2)
           .map(name => name.charAt(0).toUpperCase())
@@ -77,12 +81,12 @@ function getColumns(
         return (
           <div className="flex items-center gap-2">
             <Avatar className="rounded-full size-6">
-              <AvatarImage src={user.imageUrl ?? undefined} alt={user.name} />
+              <AvatarImage src={user.imageUrl ?? undefined} alt={user.name || "User avatar"} />
               <AvatarFallback className="uppercase bg-primary text-primary-foreground text-xs">
                 {nameInitials}
               </AvatarFallback>
             </Avatar>
-            <span>{user.name}</span>
+            <span>{user.name || "Unknown User"}</span>
           </div>
         )
       },
@@ -125,7 +129,7 @@ function getColumns(
       ),
     },
     {
-      accessorKey: "createdAt",
+      accessorKey: "created_at",
       accessorFn: row => row.createdAt,
       header: ({ column }) => (
         <DataTableSortableColumnHeader title="Applied On" column={column} />
@@ -143,7 +147,7 @@ function getColumns(
             coverLetterMarkdown={jobListing.coverLetterMarkdown}
             resumeMarkdown={resume?.markdownSummary}
             resumeUrl={resume?.resumeFileUrl}
-            userName={jobListing.user.name}
+            userName={jobListing.user.name || "Unknown User"}
           />
         )
       },
@@ -185,7 +189,7 @@ export function ApplicationTable({
       initialFilters={[
         {
           id: "stage",
-          value: applicationStages.filter(stage => stage !== "denied"),
+          value: applicationStages.filter(stage => stage !== "rejected"),
         },
       ]}
     />
